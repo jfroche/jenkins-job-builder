@@ -2055,7 +2055,7 @@ def join_trigger(parser, xml_parent, data):
 
     :arg list projects: list of projects to trigger
     :arg list publishers: list of publishers to trigger
-    :arg boolean even-if-unstable: whether to trigger when upstream
+    :arg boolean even-if-unstable: whether to trigger when downstream
         are unstable
 
     Example:

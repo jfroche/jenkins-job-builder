@@ -6,4 +6,4 @@ publishers:
       publishers:
         - publisher-one
         - publisher-two
-      even-if-unstable: false
+      even-if-unstable: true
