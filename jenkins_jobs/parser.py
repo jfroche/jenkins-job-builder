@@ -123,6 +123,13 @@ class YamlParser(object):
             return job
         return self.applyDefaults(job)
 
+    def getFolder(self):
+        folder = None
+        for project in self.data.get('project', {}).values():
+            if 'folder' in project:
+                folder = project['folder']
+        return folder
+
     def applyDefaults(self, data, override_dict=None):
         if override_dict is None:
             override_dict = {}
