@@ -107,11 +107,11 @@ class CacheStorage(object):
         return path
 
     def set(self, job, folder, md5):
-        key = folder + '/' + job
+        key = str(folder) + '/' + job
         self.data[key] = md5
 
     def is_cached(self, job, folder):
-        key = folder + '/' + job
+        key = str(folder) + '/' + job
         if key in self.data:
             return True
         return False
@@ -305,10 +305,6 @@ class Builder(object):
             jobs = [j['name'] for j in self.parser.jobs]
         else:
             jobs = [jobs_glob]
-
-        folder = self.parser.getFolder()
-        if folder is not None:
-            logger.info("Job(s) folder path: '%s'", folder)
 
         if jobs is not None:
             logger.info("Removing jenkins job(s): %s" % ", ".join(jobs))
