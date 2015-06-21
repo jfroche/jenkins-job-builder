@@ -333,6 +333,12 @@ def authorization(parser, xml_parent, data):
     if data:
         matrix = XML.SubElement(xml_parent,
                                 'hudson.security.AuthorizationMatrixProperty')
+        project_type = data.get('project-type', 'freestyle')
+        if project_type in 'folder':
+            matrix = XML.SubElement(xml_parent,
+                                    'com.cloudbees.hudson.plugins.folder'
+                                    '.properties.AuthorizationMatrixProperty')
+
         for (username, perms) in data.items():
             for perm in perms:
                 pe = XML.SubElement(matrix, 'permission')
