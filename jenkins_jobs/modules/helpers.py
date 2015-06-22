@@ -170,3 +170,25 @@ def findbugs_settings(xml_parent, data):
                                       False)).lower()
     XML.SubElement(xml_parent,
                    'usePreviousBuildAsReference').text = use_previous_build
+
+
+def auth_settings(xml_parent, data):
+    # general auth settings
+    mapping = {
+        'job-delete': 'hudson.model.Item.Delete',
+        'job-configure': 'hudson.model.Item.Configure',
+        'job-read': 'hudson.model.Item.Read',
+        'job-extended-read': 'hudson.model.Item.ExtendedRead',
+        'job-discover': 'hudson.model.Item.Discover',
+        'job-build': 'hudson.model.Item.Build',
+        'job-workspace': 'hudson.model.Item.Workspace',
+        'job-cancel': 'hudson.model.Item.Cancel',
+        'run-delete': 'hudson.model.Run.Delete',
+        'run-update': 'hudson.model.Run.Update',
+        'scm-tag': 'hudson.scm.SCM.Tag'
+    }
+
+    for (username, perms) in data.items():
+        for perm in perms:
+            pe = XML.SubElement(xml_parent, 'permission')
+            pe.text = "{0}:{1}".format(mapping[perm], username)
