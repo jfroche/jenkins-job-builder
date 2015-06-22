@@ -31,7 +31,6 @@ import logging
 
 from jenkins_jobs.constants import MAGIC_MANAGE_STRING
 from jenkins_jobs.parser import YamlParser
-from jenkins_jobs.errors import JenkinsJobsException
 
 logger = logging.getLogger(__name__)
 
@@ -106,13 +105,11 @@ class CacheStorage(object):
             os.makedirs(path)
         return path
 
-    def set(self, job, folder, md5):
-        key = folder + '/' + job
-        self.data[key] = md5
+    def set(self, job, md5):
+        self.data[job] = md5
 
-    def is_cached(self, job, folder):
-        key = folder + '/' + job
-        if key in self.data:
+    def is_cached(self, job):
+        if job in self.data:
             return True
         return False
 
@@ -144,47 +141,25 @@ class Jenkins(object):
     def __init__(self, url, user, password):
         self.jenkins = jenkins.Jenkins(url, user, password)
 
-    def update_job(self, job_name, xml, folder=None):
-        full_job_name = job_name
-        if folder is not None:
-            if self.is_folder(folder) is None:
-                logger.error("Check folder {0}".format(self.is_folder(folder)))
-                raise JenkinsJobsException("Provided folder: '{0}' does not exist"
-                                           .format(folder))
-            full_job_name = folder + '/' + job_name
-        if self.is_job(job_name, folder):
-            logger.info("Reconfiguring jenkins job {0}".format(full_job_name))
-            self.jenkins.reconfig_job(job_name, xml, folder)
+    def update_job(self, job_name, xml):
+        if self.is_job(job_name):
+            logger.info("Reconfiguring jenkins job {0}".format(job_name))
+            self.jenkins.reconfig_job(job_name, xml)
         else:
-            logger.info("Creating jenkins job {0}".format(full_job_name))
-            self.jenkins.create_job(job_name, xml, folder)
+            logger.info("Creating jenkins job {0}".format(job_name))
+            self.jenkins.create_job(job_name, xml)
 
-    def is_job(self, job_name, folder=None):
-        return self.jenkins.job_exists(job_name, folder)
+    def is_job(self, job_name):
+        return self.jenkins.job_exists(job_name)
 
-    def is_folder(self, folder):
-        # we will treat last folder like job in folder
-        # if there is only one folder then we will treat him as job without folder
-        names = folder.rsplit("/", 1)
-        if len(names) > 1:
-            job_name = names[1]
-            folder = names[0]
-        else:
-            job_name = names[0]
-            folder = None
-        return self.jenkins.job_exists(job_name, folder)
-
-    def get_job_md5(self, job_name, folder=None):
-        xml = self.jenkins.get_job_config(job_name, folder)
+    def get_job_md5(self, job_name):
+        xml = self.jenkins.get_job_config(job_name)
         return hashlib.md5(xml).hexdigest()
 
-    def delete_job(self, job_name, folder=None):
-        full_job_name = job_name
-        if folder is not None:
-            full_job_name = folder + '/' + job_name
-        if self.is_job(job_name, folder):
-            logger.info("Deleting jenkins job {0}".format(full_job_name))
-            self.jenkins.delete_job(job_name, folder)
+    def delete_job(self, job_name):
+        if self.is_job(job_name):
+            logger.info("Deleting jenkins job {0}".format(job_name))
+            self.jenkins.delete_job(job_name)
 
     def get_plugins_info(self):
         """ Return a list of plugin_info dicts, one for each plugin on the
@@ -306,16 +281,12 @@ class Builder(object):
         else:
             jobs = [jobs_glob]
 
-        folder = self.parser.getFolder()
-        if folder is not None:
-            logger.info("Job(s) folder path: '%s'", folder)
-
         if jobs is not None:
             logger.info("Removing jenkins job(s): %s" % ", ".join(jobs))
         for job in jobs:
-            self.jenkins.delete_job(job, folder)
-            if(self.cache.is_cached(job, folder)):
-                self.cache.set(job, folder, '')
+            self.jenkins.delete_job(job)
+            if(self.cache.is_cached(job)):
+                self.cache.set(job, '')
 
     def delete_all_jobs(self):
         jobs = self.jenkins.get_jobs()
@@ -327,7 +298,6 @@ class Builder(object):
         self.load_files(input_fn)
         self.parser.expandYaml(jobs_glob)
         self.parser.generateXML()
-        folder = self.parser.getFolder()
 
         logger.info("Number of jobs generated:  %d", len(self.parser.xml_jobs))
         self.parser.xml_jobs.sort(key=operator.attrgetter('name'))
@@ -366,15 +336,15 @@ class Builder(object):
                 f.close()
                 continue
             md5 = job.md5()
-            if (self.jenkins.is_job(job.name, folder)
-                    and not self.cache.is_cached(job.name, folder)):
-                old_md5 = self.jenkins.get_job_md5(job.name, folder)
-                self.cache.set(job.name, folder, old_md5)
+            if (self.jenkins.is_job(job.name)
+                    and not self.cache.is_cached(job.name)):
+                old_md5 = self.jenkins.get_job_md5(job.name)
+                self.cache.set(job.name, old_md5)
 
             if self.cache.has_changed(job.name, md5) or self.ignore_cache:
-                self.jenkins.update_job(job.name, job.output(), folder)
+                self.jenkins.update_job(job.name, job.output())
                 updated_jobs += 1
-                self.cache.set(job.name, folder, md5)
+                self.cache.set(job.name, md5)
             else:
                 logger.debug("'{0}' has not changed".format(job.name))
         return self.parser.xml_jobs, updated_jobs
