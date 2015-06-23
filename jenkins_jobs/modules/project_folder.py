@@ -48,10 +48,11 @@ class Folder(jenkins_jobs.modules.base.Base):
         attributes = {"class": "com.cloudbees.hudson.plugins.folder."
                                "icons.StockFolderIcon"}
         XML.SubElement(xml_parent, 'icon', attrib=attributes)
-        XML.SubElement(xml_parent, 'views')
+        """XML.SubElement(xml_parent, 'views')"""
         attributes = {"class": "hudson.views.DefaultViewsTabBar"}
         XML.SubElement(xml_parent, 'viewsTabBar', attrib=attributes)
-        XML.SubElement(xml_parent, 'primaryView').text = 'All'
+        XML.SubElement(xml_parent, 'primaryView').text = \
+            data.get('primary-view', 'All')
         XML.SubElement(xml_parent, 'healthMetrics')
 
         return xml_parent
