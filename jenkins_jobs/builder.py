@@ -18,12 +18,9 @@
 import errno
 import os
 import operator
-import sys
 import hashlib
 import yaml
 import xml.etree.ElementTree as XML
-import xml
-from xml.dom import minidom
 import jenkins
 import re
 from pprint import pformat
@@ -33,43 +30,6 @@ from jenkins_jobs.constants import MAGIC_MANAGE_STRING
 from jenkins_jobs.parser import YamlParser
 
 logger = logging.getLogger(__name__)
-
-
-# Python 2.6's minidom toprettyxml produces broken output by adding extraneous
-# whitespace around data. This patches the broken implementation with one taken
-# from Python > 2.7.3
-def writexml(self, writer, indent="", addindent="", newl=""):
-    # indent = current indentation
-    # addindent = indentation to add to higher levels
-    # newl = newline string
-    writer.write(indent + "<" + self.tagName)
-
-    attrs = self._get_attributes()
-    a_names = attrs.keys()
-    a_names.sort()
-
-    for a_name in a_names:
-        writer.write(" %s=\"" % a_name)
-        minidom._write_data(writer, attrs[a_name].value)
-        writer.write("\"")
-    if self.childNodes:
-        writer.write(">")
-        if (len(self.childNodes) == 1 and
-                self.childNodes[0].nodeType == minidom.Node.TEXT_NODE):
-            self.childNodes[0].writexml(writer, '', '', '')
-        else:
-            writer.write(newl)
-            for node in self.childNodes:
-                node.writexml(writer, indent + addindent, addindent, newl)
-            writer.write(indent)
-        writer.write("</%s>%s" % (self.tagName, newl))
-    else:
-        writer.write("/>%s" % (newl))
-
-# PyXML xml.__name__ is _xmlplus. Check that if we don't have the default
-# system version of the minidom, then patch the writexml method
-if sys.version_info[:3] < (2, 7, 3) or xml.__name__ != 'xml':
-    minidom.Element.writexml = writexml
 
 
 class CacheStorage(object):
@@ -140,6 +100,22 @@ class CacheStorage(object):
 class Jenkins(object):
     def __init__(self, url, user, password):
         self.jenkins = jenkins.Jenkins(url, user, password)
+        self._jobs = None
+        self._job_list = None
+
+    @property
+    def jobs(self):
+        if self._jobs is None:
+            # populate jobs
+            self._jobs = self.jenkins.get_jobs()
+
+        return self._jobs
+
+    @property
+    def job_list(self):
+        if self._job_list is None:
+            self._job_list = set(job['name'] for job in self.jobs)
+        return self._job_list
 
     def update_job(self, job_name, xml):
         if self.is_job(job_name):
@@ -150,6 +126,11 @@ class Jenkins(object):
             self.jenkins.create_job(job_name, xml)
 
     def is_job(self, job_name):
+        # first use cache
+        if job_name in self.job_list:
+            return True
+
+        # if not exists, use jenkins
         return self.jenkins.job_exists(job_name)
 
     def get_job_md5(self, job_name):
@@ -181,8 +162,11 @@ class Jenkins(object):
 
         return plugins_list
 
-    def get_jobs(self):
-        return self.jenkins.get_jobs()
+    def get_jobs(self, cache=True):
+        if not cache:
+            self._jobs = None
+            self._job_list = None
+        return self.jobs
 
     def is_managed(self, job_name):
         xml = self.jenkins.get_job_config(job_name)

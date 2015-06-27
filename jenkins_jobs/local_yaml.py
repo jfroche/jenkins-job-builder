@@ -75,6 +75,19 @@ Example:
     .. literalinclude::
         /../../tests/localyaml/fixtures/include-raw001-vars.sh
 
+
+Variants for the raw include tags ``!include-raw:`` and
+``!include-raw-escape:`` accept a list of files. All of the specified files
+are concatenated and included as string data.
+
+Example:
+
+    .. literalinclude::
+        /../../tests/localyaml/fixtures/include-raw-multi001.yaml
+
+    .. literalinclude::
+        /../../tests/localyaml/fixtures/include-raw-escaped-multi001.yaml
+
 """
 
 import codecs
@@ -129,7 +142,31 @@ class OrderedConstructor(BaseConstructor):
         data.update(mapping)
 
 
-class LocalLoader(OrderedConstructor, yaml.Loader):
+class LocalAnchorLoader(yaml.Loader):
+    """Subclass for yaml.Loader which keeps Alias between calls"""
+    anchors = {}
+
+    def __init__(self, *args, **kwargs):
+        super(LocalAnchorLoader, self).__init__(*args, **kwargs)
+        self.anchors = LocalAnchorLoader.anchors
+
+    @classmethod
+    def reset_anchors(cls):
+        cls.anchors = {}
+
+    # override the default composer to skip resetting the anchors at the
+    # end of the current document
+    def compose_document(self):
+        # Drop the DOCUMENT-START event.
+        self.get_event()
+        # Compose the root node.
+        node = self.compose_node(None, None)
+        # Drop the DOCUMENT-END event.
+        self.get_event()
+        return node
+
+
+class LocalLoader(OrderedConstructor, LocalAnchorLoader):
     """Subclass for yaml.Loader which handles the local tags 'include',
     'include-raw' and 'include-raw-escaped' to specify a file to include data
     from and whether to parse it as additional yaml, treat it as a data blob
@@ -181,6 +218,9 @@ class LocalLoader(OrderedConstructor, yaml.Loader):
         self.add_constructor('!include-raw', self._include_raw_tag)
         self.add_constructor('!include-raw-escape',
                              self._include_raw_escape_tag)
+        self.add_constructor('!include-raw:', self._include_raw_tag_multi)
+        self.add_constructor('!include-raw-escape:',
+                             self._include_raw_escape_tag_multi)
 
         # constructor to preserve order of maps and ensure that the order of
         # keys returned is consistent across multiple python versions
@@ -220,12 +260,26 @@ class LocalLoader(OrderedConstructor, yaml.Loader):
             raise
         return data
 
+    def _include_raw_tag_multi(self, loader, node):
+        if not isinstance(node, yaml.SequenceNode):
+            raise yaml.constructor.ConstructorError(
+                None, None,
+                "expected a sequence node, but found %s" % node.id,
+                node.start_mark)
+
+        return '\n'.join(self._include_raw_tag(loader, scalar_node)
+                         for scalar_node in node.value)
+
     def _include_raw_escape_tag(self, loader, node):
         return self._escape(self._include_raw_tag(loader, node))
+
+    def _include_raw_escape_tag_multi(self, loader, node):
+        return self._escape(self._include_raw_tag_multi(loader, node))
 
     def _escape(self, data):
         return re.sub(r'({|})', r'\1\1', data)
 
 
 def load(stream, **kwargs):
+    LocalAnchorLoader.reset_anchors()
     return yaml.load(stream, functools.partial(LocalLoader, **kwargs))

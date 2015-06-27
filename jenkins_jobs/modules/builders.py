@@ -283,7 +283,7 @@ def trigger_builds(parser, xml_parent, data):
     Requires the Jenkins :jenkins-wiki:`Parameterized Trigger Plugin
     <Parameterized+Trigger+Plugin>`.
 
-    :arg str project: the Jenkins project to trigger
+    :arg list project: the Jenkins project to trigger
     :arg str predefined-parameters:
       key/value pairs to be passed to the job (optional)
     :arg list bool-parameters:
@@ -299,6 +299,12 @@ def trigger_builds(parser, xml_parent, data):
     :arg bool current-parameters: Whether to include the
       parameters passed to the current build to the
       triggered job.
+    :arg str node-label-name: Define a name for the NodeLabel parameter to be
+      set. Used in conjunction with node-label. Requires NodeLabel Parameter
+      Plugin (optional)
+    :arg str node-label: Label of the nodes where build should be triggered.
+      Used in conjunction with node-label-name.  Requires NodeLabel Parameter
+      Plugin (optional)
     :arg bool svn-revision: Whether to pass the svn revision
       to the triggered job
     :arg bool git-revision: Whether to pass the git revision
@@ -355,6 +361,12 @@ def trigger_builds(parser, xml_parent, data):
                   (default true)
 
     Examples:
+
+    Basic usage with yaml list of projects.
+
+    .. literalinclude::
+       /../../tests/builders/fixtures/trigger-builds/project-list.yaml
+       :language: yaml
 
     Basic usage with passing svn revision through.
 
@@ -432,6 +444,15 @@ def trigger_builds(parser, xml_parent, data):
                 XML.SubElement(param, 'name').text = str(bool_param['name'])
                 XML.SubElement(param, 'value').text = str(
                     bool_param.get('value', False)).lower()
+
+        if 'node-label-name' in project_def and 'node-label' in project_def:
+            node = XML.SubElement(tconfigs, 'org.jvnet.jenkins.plugins.'
+                                  'nodelabelparameter.parameterizedtrigger.'
+                                  'NodeLabelBuildParameter')
+            XML.SubElement(node, 'name').text = \
+                project_def.get('node-label-name')
+            XML.SubElement(node, 'nodeLabel').text = \
+                project_def.get('node-label')
 
         if(len(list(tconfigs)) == 0):
             tconfigs.set('class', 'java.util.Collections$EmptyList')
@@ -517,7 +538,11 @@ def trigger_builds(parser, xml_parent, data):
                         'ignore-offline-nodes', True)).lower()
 
         projects = XML.SubElement(tconfig, 'projects')
-        projects.text = project_def['project']
+        if isinstance(project_def['project'], list):
+            projects.text = ",".join(project_def['project'])
+        else:
+            projects.text = project_def['project']
+
         condition = XML.SubElement(tconfig, 'condition')
         condition.text = 'ALWAYS'
         trigger_with_no_params = XML.SubElement(tconfig,
@@ -1074,6 +1099,41 @@ def conditional_step(parser, xml_parent, data):
                                            evaluation_class)
     for step in steps:
         build_step(steps_parent, step)
+
+
+def maven_builder(parser, xml_parent, data):
+    """yaml: maven-builder
+    Execute Maven3 builder
+
+    :arg str name: Name of maven installation from the configuration
+    :arg str pom: Location of pom.xml (default 'pom.xml')
+    :arg str goals: Goals to execute
+    :arg str maven-opts: Additional options for maven (optional)
+
+    Requires the Jenkins `Artifactory Plugin
+    <https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin>`_
+    allows your build jobs to deploy artifacts automatically to Artifactory.
+
+    Example:
+
+    .. literalinclude:: /../../tests/builders/fixtures/maven-builder001.yaml
+       :language: yaml
+    """
+    maven = XML.SubElement(xml_parent, 'org.jfrog.hudson.maven3.Maven3Builder')
+
+    required = {
+        'mavenName': 'name',
+        'goals': 'goals',
+    }
+
+    for key in required:
+        try:
+            XML.SubElement(maven, key).text = data[required[key]]
+        except KeyError:
+            raise MissingAttributeError(required[key])
+
+    XML.SubElement(maven, 'rootPom').text = data.get('pom', 'pom.xml')
+    XML.SubElement(maven, 'mavenOpts').text = data.get('maven-opts', '')
 
 
 def maven_target(parser, xml_parent, data):
@@ -1845,6 +1905,29 @@ def github_notifier(parser, xml_parent, data):
                    'com.cloudbees.jenkins.GitHubSetCommitStatusBuilder')
 
 
+def ssh_builder(parser, xml_parent, data):
+    """yaml: ssh-builder
+    Executes command on remote host
+    Requires the Jenkins `SSH plugin.
+    <https://wiki.jenkins-ci.org/display/JENKINS/SSH+plugin>`_
+
+    :arg str ssh-user-ip: user@ip:ssh_port of machine that was defined
+                          in jenkins according to SSH plugin instructions
+    :arg str command: command to run on remote server
+
+    Example:
+
+    .. literalinclude:: /../../tests/builders/fixtures/ssh-builder.yaml
+    """
+    builder = XML.SubElement(
+        xml_parent, 'org.jvnet.hudson.plugins.SSHBuilder')
+    try:
+        XML.SubElement(builder, 'siteName').text = str(data['ssh-user-ip'])
+        XML.SubElement(builder, 'command').text = str(data['command'])
+    except KeyError as e:
+        raise MissingAttributeError("'%s'" % e.args[0])
+
+
 def sonar(parser, xml_parent, data):
     """yaml: sonar
     Invoke standalone Sonar analysis.
@@ -1924,3 +2007,42 @@ def sonatype_clm(parser, xml_parent, data):
         data.get('module-excludes', '')).lower()
     XML.SubElement(path_config, 'scanProperties').text = str(
         data.get('advanced-options', '')).lower()
+
+
+def beaker(parser, xml_parent, data):
+    """yaml: beaker
+    Execute a beaker build step. Requires the Jenkins :jenkins-wiki:`Beaker
+    Builder Plugin <Beaker+Builder+Plugin>`.
+
+    :arg str content: Run job from string
+                      (Alternative: you can choose a path instead)
+    :arg str path: Run job from file
+                   (Alternative: you can choose a content instead)
+    :arg bool download-logs: Download Beaker log files (default false)
+
+    Example:
+
+    .. literalinclude:: ../../tests/builders/fixtures/beaker-path.yaml
+       :language: yaml
+
+    .. literalinclude:: ../../tests/builders/fixtures/beaker-content.yaml
+       :language: yaml
+    """
+    beaker = XML.SubElement(xml_parent, 'org.jenkinsci.plugins.beakerbuilder.'
+                                        'BeakerBuilder')
+    jobSource = XML.SubElement(beaker, 'jobSource')
+    if 'content' in data and 'path' in data:
+        raise JenkinsJobsException("Use just one of 'content' or 'path'")
+    elif 'content' in data:
+        jobSourceClass = "org.jenkinsci.plugins.beakerbuilder.StringJobSource"
+        jobSource.set('class', jobSourceClass)
+        XML.SubElement(jobSource, 'jobContent').text = data['content']
+    elif 'path' in data:
+        jobSourceClass = "org.jenkinsci.plugins.beakerbuilder.FileJobSource"
+        jobSource.set('class', jobSourceClass)
+        XML.SubElement(jobSource, 'jobPath').text = data['path']
+    else:
+        raise JenkinsJobsException("Use one of 'content' or 'path'")
+
+    XML.SubElement(beaker, 'downloadFiles').text = str(data.get(
+        'download-logs', False)).lower()
