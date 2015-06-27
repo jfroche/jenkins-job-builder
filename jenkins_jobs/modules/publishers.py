@@ -35,6 +35,7 @@ from jenkins_jobs.errors import JenkinsJobsException
 import logging
 import pkg_resources
 import sys
+import six
 import random
 
 
@@ -219,7 +220,8 @@ def trigger_parameterized_builds(parser, xml_parent, data):
     Note: 'node-parameters' overrides the Node that the triggered
     project is tied to.
 
-    :arg str project: name of the job to trigger
+    :arg list project: list the jobs to trigger, will generate comma-separated
+      string containing the named jobs.
     :arg str predefined-parameters: parameters to pass to the other
       job (optional)
     :arg bool current-parameters: Whether to include the parameters passed
@@ -323,7 +325,12 @@ def trigger_parameterized_builds(parser, xml_parent, data):
         else:
             tconfigs.set('class', 'java.util.Collections$EmptyList')
         projects = XML.SubElement(tconfig, 'projects')
-        projects.text = project_def['project']
+
+        if isinstance(project_def['project'], list):
+            projects.text = ",".join(project_def['project'])
+        else:
+            projects.text = project_def['project']
+
         condition = XML.SubElement(tconfig, 'condition')
         condition.text = project_def.get('condition', 'ALWAYS')
         trigger_with_no_params = XML.SubElement(tconfig,
@@ -827,6 +834,9 @@ def junit(parser, xml_parent, data):
         <Test+stability+plugin>`.
     :arg bool claim-build: Allow claiming of failed tests (default false)
         Requires the Jenkins :jenkins-wiki:`Claim Plugin <Claim+plugin>`.
+    :arg bool measurement-plots: Create measurement plots (default false)
+        Requires the Jenkins `Measurement Plots Plugin.
+        <https://wiki.jenkins-ci.org/display/JENKINS/Measurement+Plots+Plugin>`_.
 
     Minimal example using defaults:
 
@@ -851,6 +861,9 @@ def junit(parser, xml_parent, data):
     if str(data.get('claim-build', False)).lower() == 'true':
         XML.SubElement(datapublisher,
                        'hudson.plugins.claim.ClaimTestDataPublisher')
+    if str(data.get('measurement-plots', False)).lower() == 'true':
+        XML.SubElement(datapublisher,
+                       'hudson.plugins.measurement__plots.TestDataPublisher')
 
 
 def xunit(parser, xml_parent, data):
@@ -1820,7 +1833,21 @@ def groovy_postbuild(parser, xml_parent, data):
     Requires the Jenkins :jenkins-wiki:`Groovy Postbuild Plugin
     <Groovy+Postbuild+Plugin>`.
 
-    :Parameter: the groovy script to execute
+    Please pay attention on version of plugin you have installed.
+    There were incompatible changes between 1.x and 2.x. Please see
+    :jenkins-wiki:`home page <Groovy+Postbuild+Plugin>` of this plugin
+    for full information including migration process.
+
+    :arg str script: The groovy script to execute
+    :arg list classpath: List of additional classpaths (>=1.6)
+    :arg str on-failure: In case of script failure leave build as it is
+                         for "nothing" option, mark build as unstable
+                         for "unstable" and mark job as failure for "failed"
+                         (default is "nothing")
+    :arg bool matrix-parent: Run script for matrix parent only (>=1.9)
+                             (default false)
+    :arg bool sandbox: Execute script inside of groovy sandbox (>=2.0)
+                       (default false)
 
     Example:
 
@@ -1828,10 +1855,65 @@ def groovy_postbuild(parser, xml_parent, data):
         /../../tests/publishers/fixtures/groovy-postbuild001.yaml
        :language: yaml
     """
-    root_tag = 'org.jvnet.hudson.plugins.groovypostbuild.'\
-        'GroovyPostbuildRecorder'
+    logger = logging.getLogger("%s:groovy-postbuild" % __name__)
+    # Backward compatibility with old format
+    if isinstance(data, six.string_types):
+        logger.warn(
+            "You use depricated configuration, please follow documentation "
+            "to change configuration. It is not going to be supported in "
+            "future releases!"
+        )
+        data = {
+            'script': data,
+        }
+    # There are incompatible changes, we need to know version
+    info = parser.registry.get_plugin_info('groovy-postbuild')
+    version = pkg_resources.parse_version(info.get('version', "0"))
+    # Version specific predicates
+    matrix_parent_support = version >= pkg_resources.parse_version("1.9")
+    security_plugin_support = version >= pkg_resources.parse_version("2.0")
+    extra_classpath_support = version >= pkg_resources.parse_version("1.6")
+
+    root_tag = (
+        'org.jvnet.hudson.plugins.groovypostbuild.GroovyPostbuildRecorder'
+    )
     groovy = XML.SubElement(xml_parent, root_tag)
-    XML.SubElement(groovy, 'groovyScript').text = data
+
+    behavior = data.get('on-failure')
+    XML.SubElement(groovy, 'behavior').text = {
+        'unstable': '1',
+        'failed': '2',
+    }.get(behavior, '0')
+
+    if matrix_parent_support:
+        XML.SubElement(
+            groovy,
+            'runForMatrixParent',
+        ).text = str(data.get('matrix-parent', False)).lower()
+
+    classpaths = data.get('classpath', list())
+    if security_plugin_support:
+        script = XML.SubElement(groovy, 'script')
+        XML.SubElement(script, 'script').text = data.get('script')
+        XML.SubElement(script, 'sandbox').text = str(
+            data.get('sandbox', False)
+        ).lower()
+        if classpaths:
+            classpath = XML.SubElement(script, 'classpath')
+            for path in classpaths:
+                script_path = XML.SubElement(classpath, 'entry')
+                XML.SubElement(script_path, 'url').text = path
+    else:
+        XML.SubElement(groovy, 'groovyScript').text = data.get('script')
+        if extra_classpath_support and classpaths:
+            classpath = XML.SubElement(groovy, 'classpath')
+            for path in classpaths:
+                script_path = XML.SubElement(
+                    classpath,
+                    'org.jvnet.hudson.plugins.groovypostbuild.'
+                    'GroovyScriptPath',
+                )
+                XML.SubElement(script_path, 'path').text = path
 
 
 def base_publish_over(xml_parent, data, console_prefix,
@@ -2246,6 +2328,8 @@ def maven_deploy(parser, xml_parent, data):
       (default true)
     :arg bool deploy-unstable: Deploy even if the build is unstable
       (default false)
+    :arg str release-env-var: If the given variable name is set to "true",
+      the deploy steps are skipped. (optional)
 
 
     Example:
@@ -2263,6 +2347,8 @@ def maven_deploy(parser, xml_parent, data):
         data.get('unique-version', True)).lower()
     XML.SubElement(p, 'evenIfUnstable').text = str(
         data.get('deploy-unstable', False)).lower()
+    if 'release-env-var' in data:
+        XML.SubElement(p, 'releaseEnvVar').text = data['release-env-var']
 
 
 def artifactory(parser, xml_parent, data):
@@ -3190,6 +3276,15 @@ def plot(parser, xml_parent, data):
                                descriptions used as X-axis labels and the
                                build number and date used for tooltips.
                                (default: False)
+    :arg bool exclude-zero-yaxis: When false, Y-axis contains the value zero
+                                  even if it is not included in the data
+                                  series. When true, the value zero is not
+                                  automatically included. (default: False)
+    :arg bool logarithmic-yaxis: When true, the Y-axis will use a logarithmic
+                                 scale. By default, the Y-axis uses a linear
+                                 scale. (default: False)
+    :arg bool keep-records: When true, show all builds up to 'Number of
+                            builds to include'. (default: false)
     :arg str csv-file-name: Use for choosing the file name in which the data
                             will be persisted. If none specified and random
                             name is generated as done in the Jenkins Plot
@@ -3291,6 +3386,12 @@ def plot(parser, xml_parent, data):
         XML.SubElement(plugin, 'group').text = plot['group']
         XML.SubElement(plugin, 'useDescr').text = \
             str(plot.get('use-description', False)).lower()
+        XML.SubElement(plugin, 'exclZero').text = \
+            str(plot.get('exclude-zero-yaxis', False)).lower()
+        XML.SubElement(plugin, 'logarithmic').text = \
+            str(plot.get('logarithmic-yaxis', False)).lower()
+        XML.SubElement(plugin, 'keepRecords').text = \
+            str(plot.get('keep-records', False)).lower()
         XML.SubElement(plugin, 'numBuilds').text = plot.get('num-builds', '')
         style_list = ['area', 'bar', 'bar3d', 'line', 'line3d', 'stackedArea',
                       'stackedbar', 'stackedbar3d', 'waterfall']
@@ -4057,6 +4158,8 @@ def scan_build(parser, xml_parent, data):
     :arg bool mark-unstable: Mark build as unstable if the number of bugs
         exceeds a threshold (default: false)
     :arg int threshold: Threshold for marking builds as unstable (default: 0)
+    :arg string exclude-paths: Comma separated paths to exclude from reports
+        (default: '')
 
     Example:
 
@@ -4075,6 +4178,8 @@ def scan_build(parser, xml_parent, data):
     XML.SubElement(p, 'markBuildUnstableWhenThresholdIsExceeded').text = \
         str(data.get('mark-unstable', False)).lower()
     XML.SubElement(p, 'bugThreshold').text = threshold
+    XML.SubElement(p, 'clangexcludedpaths').text = str(
+        data.get('exclude-paths', ''))
 
 
 def dry(parser, xml_parent, data):
@@ -4489,6 +4594,69 @@ def scoverage(parser, xml_parent, data):
         data.get('report-directory', ''))
     XML.SubElement(scoverage, 'reportFile').text = str(
         data.get('report-file', ''))
+
+
+def display_upstream_changes(parser, xml_parent, data):
+    """yaml: display-upstream-changes
+    Display SCM changes of upstream jobs. Requires the Jenkins
+    :jenkins-wiki:`Display Upstream Changes Plugin
+    <Display+Upstream+Changes+Plugin>`.
+
+    Example:
+
+    .. literalinclude:: \
+    /../../tests/publishers/fixtures/display-upstream-changes.yaml
+    """
+    XML.SubElement(
+        xml_parent,
+        'jenkins.plugins.displayupstreamchanges.'
+        'DisplayUpstreamChangesRecorder')
+
+
+def gatling(parser, xml_parent, data):
+    """yaml: gatling
+    Publish gatling results as a trend graph
+    Requires the Jenkins :jenkins-wiki:`Gatling Plugin <Gatling+Plugin>`.
+
+    Example:
+
+    .. literalinclude:: /../../tests/publishers/fixtures/gatling001.yaml
+       :language: yaml
+    """
+    gatling = XML.SubElement(
+        xml_parent,
+        'io.gatling.jenkins.GatlingPublisher')
+    XML.SubElement(gatling, 'enabled').text = 'true'
+
+
+def logstash(parser, xml_parent, data):
+    """yaml: logstash
+    Send job's console log to Logstash for processing and analyis of
+    your job data. Also stores test metrics from Junit.
+    Requires the Jenkins :jenkins-wiki:`Logstash Plugin <Logstash+Plugin>`.
+
+    :arg num max-lines: The maximum number of log lines to send to Logstash.
+        ( default 1000 )
+    :arg bool fail-build: Mark build as failed if this step fails.
+        ( default false )
+
+    Minimal Example:
+
+    .. literalinclude::  /../../tests/publishers/fixtures/logstash-min.yaml
+
+    Full Example:
+
+    .. literalinclude::  /../../tests/publishers/fixtures/logstash-full.yaml
+
+    """
+
+    logstash = XML.SubElement(xml_parent,
+                              'jenkins.plugins.logstash.LogstashNotifier')
+    XML.SubElement(logstash, 'maxLines').text = str(
+        data.get('max-lines', 1000))
+
+    XML.SubElement(logstash, 'failBuild').text = str(
+        data.get('fail-build', False))
 
 
 class Publishers(jenkins_jobs.modules.base.Base):
