@@ -35,6 +35,7 @@ Example::
 import xml.etree.ElementTree as XML
 import jenkins_jobs.modules.base
 from jenkins_jobs.errors import JenkinsJobsException
+from jenkins_jobs.modules.helpers import auth_settings
 import logging
 
 
@@ -278,6 +279,50 @@ def authenticated_build(parser, xml_parent, data):
             'hudson.model.Item.Build:authenticated'
 
 
+def folder_auth(parser, xml_parent, data):
+    """yaml: folder-auth
+    Specifies an authorization matrix for folder
+
+    The available rights are:
+      job-delete
+      job-configure
+      job-read
+      job-extended-read
+      job-discover
+      job-build
+      job-workspace
+      job-cancel
+      run-delete
+      run-update
+      scm-tag
+
+    Example::
+
+      properties:
+        - folder-auth:
+            admin:
+              - job-delete
+              - job-configure
+              - job-read
+              - job-discover
+              - job-build
+              - job-workspace
+              - job-cancel
+              - run-delete
+              - run-update
+              - scm-tag
+            anonymous:
+              - job-discover
+              - job-read
+              - job-extended-read
+    """
+    if data:
+        matrix = XML.SubElement(xml_parent, 'com.cloudbees.hudson'
+                                '.plugins.folder.properties'
+                                '.AuthorizationMatrixProperty')
+        auth_settings(matrix, data)
+
+
 def authorization(parser, xml_parent, data):
     """yaml: authorization
     Specifies an authorization matrix
@@ -315,28 +360,10 @@ def authorization(parser, xml_parent, data):
               - job-read
               - job-extended-read
     """
-
-    mapping = {
-        'job-delete': 'hudson.model.Item.Delete',
-        'job-configure': 'hudson.model.Item.Configure',
-        'job-read': 'hudson.model.Item.Read',
-        'job-extended-read': 'hudson.model.Item.ExtendedRead',
-        'job-discover': 'hudson.model.Item.Discover',
-        'job-build': 'hudson.model.Item.Build',
-        'job-workspace': 'hudson.model.Item.Workspace',
-        'job-cancel': 'hudson.model.Item.Cancel',
-        'run-delete': 'hudson.model.Run.Delete',
-        'run-update': 'hudson.model.Run.Update',
-        'scm-tag': 'hudson.scm.SCM.Tag'
-    }
-
     if data:
-        matrix = XML.SubElement(xml_parent,
-                                'hudson.security.AuthorizationMatrixProperty')
-        for (username, perms) in data.items():
-            for perm in perms:
-                pe = XML.SubElement(matrix, 'permission')
-                pe.text = "{0}:{1}".format(mapping[perm], username)
+        matrix = XML.SubElement(xml_parent, 'hudson.security'
+                                '.AuthorizationMatrixProperty')
+        auth_settings(matrix, data)
 
 
 def extended_choice(parser, xml_parent, data):
@@ -583,6 +610,9 @@ class Properties(jenkins_jobs.modules.base.Base):
     component_list_type = 'properties'
 
     def gen_xml(self, parser, xml_parent, data):
+
+        p = data.get('project-type', 'freestyle')
+
         properties = xml_parent.find('properties')
         if properties is None:
             properties = XML.SubElement(xml_parent, 'properties')

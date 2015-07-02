@@ -1446,6 +1446,22 @@ def email(parser, xml_parent, data):
         data.get('send-to-individuals', False)).lower()
 
 
+def display_upstream_changes(parser, xml_parent, data):
+    """yaml: display_upstream_changes
+    Displays all upstream changes on a build's summary page.
+
+    Example:
+
+    .. literalinclude::
+        /../../tests/publishers/fixtures/display_upstream_changes001.yaml
+       :language: yaml
+    """
+
+    XML.SubElement(xml_parent,
+                   'jenkins.plugins.displayupstreamchanges.'
+                   'DisplayUpstreamChangesRecorder')
+
+
 def claim_build(parser, xml_parent, data):
     """yaml: claim-build
     Claim build failures
@@ -2120,6 +2136,9 @@ def join_trigger(parser, xml_parent, data):
     Trigger a job after all the immediate downstream jobs have completed
 
     :arg list projects: list of projects to trigger
+    :arg list publishers: list of publishers to trigger
+    :arg boolean even-if-unstable: whether to trigger when downstream
+        are unstable
 
     Example:
 
@@ -2129,8 +2148,16 @@ def join_trigger(parser, xml_parent, data):
     jointrigger = XML.SubElement(xml_parent, 'join.JoinTrigger')
 
     # Simple Project List
-    joinProjectsText = ','.join(data.get('projects', ['']))
-    XML.SubElement(jointrigger, 'joinProjects').text = joinProjectsText
+    joinprojectstext = ','.join(data.get('projects', ['']))
+    XML.SubElement(jointrigger, 'joinProjects').text = joinprojectstext
+
+    # Simple publishers List
+    joinpublisherstext = ','.join(data.get('publishers', ['']))
+    XML.SubElement(jointrigger, 'joinPublishers').text = joinpublisherstext
+
+    # Even if downstream unstable
+    XML.SubElement(jointrigger, 'evenIfDownstreamUnstable').text = str(
+        data.get('even-if-unstable', False)).lower()
 
 
 def jabber(parser, xml_parent, data):
@@ -2322,6 +2349,185 @@ def maven_deploy(parser, xml_parent, data):
         data.get('deploy-unstable', False)).lower()
     if 'release-env-var' in data:
         XML.SubElement(p, 'releaseEnvVar').text = data['release-env-var']
+
+
+def artifactory(parser, xml_parent, data):
+    """ yaml: artifactory
+    Uses/requires the Artifactory plugin to deploy artifacts to
+    Artifactory Server.
+
+    Requires the Jenkins `Artifactory Plugin.
+    <https://wiki.jenkins-ci.org/display/JENKINS/Artifactory+Plugin>`_
+
+    :arg str url: Artifactory server url (default '')
+    :arg str name: Artifactory user with permissions use for
+        connected to the selected Artifactory Server (default '')
+    :arg str release-repo-key: Release repository name (default '')
+    :arg str snapshot-repo-key: Snapshots repository name (default '')
+    :arg bool deploy-artifacts: Push artifacts to the Artifactory
+        Server (default True)
+    :arg bool publish-build-info: Push build metadata with artifacts
+        (default False)
+    :arg bool discard-old-builds:
+        Remove older build info from Artifactory (default False)
+    :arg bool discard-build-artifacts:
+        Remove older build artifacts from Artifactory (default False)
+    :arg bool include-env-vars: Include all environment variables
+        accessible by the build process. Jenkins-specific env variables
+        are always included (default False)
+    :arg bool even-if-unstable: Deploy artifacts even when the build
+        is unstable (default False)
+    :arg bool run-checks: Run automatic license scanning check after the
+        build is complete (default False)
+    :arg bool include-publish-artifacts: Include the build's published
+        module artifacts in the license violation checks if they are
+        also used as dependencies for other modules in this build
+        (default False)
+    :arg bool pass-identified-downstream: When true, a build parameter
+        named ARTIFACTORY_BUILD_ROOT with a value of
+        ${JOB_NAME}-${BUILD_NUMBER} will be sent to downstream builds
+        (default False)
+    :arg bool license-auto-discovery: Tells Artifactory not to try
+        and automatically analyze and tag the build's dependencies
+        with license information upon deployment (default True)
+    :arg bool enable-issue-tracker-integration: When the Jenkins
+        JIRA plugin is enabled, synchronize information about JIRA
+        issues to Artifactory and attach issue information to build
+        artifacts (default False)
+    :arg bool aggregate-build-issues: When the Jenkins JIRA plugin
+        is enabled, include all issues from previous builds up to the
+        latest build status defined in "Aggregation Build Status"
+        (default False)
+    :arg bool allow-promotion-of-non-staged-builds: The build
+        promotion operation will be available to all successful builds
+        instead of only staged ones (default False)
+    :arg bool filter-excluded-artifacts-from-build: Add the excluded
+        files to the excludedArtifacts list and remove them from the
+        artifacts list in the build info (default False)
+    :arg str scopes:  A list of dependency scopes/configurations to run
+        license violation checks on. If left empty all dependencies from
+        all scopes will be checked (default '')
+    :arg str violation-recipients: Recipients that need to be notified
+        of license violations in the build info (default '')
+    :arg str matrix-params: Semicolon-separated list of properties to
+        attach to all deployed artifacts in addition to the default ones:
+        build.name, build.number, and vcs.revision (default '')
+    :arg str black-duck-app-name: The existing Black Duck Code Center
+        application name (default '')
+    :arg str black-duck-app-version: The existing Black Duck Code Center
+        application version (default '')
+    :arg str black-duck-report-recipients: Recipients that will be emailed
+        a report after the automatic Black Duck Code Center compliance checks
+        finished (default '')
+    :arg str black-duck-scopes: A list of dependency scopes/configurations
+        to run Black Duck Code Center compliance checks on. If left empty
+        all dependencies from all scopes will be checked (default '')
+    :arg bool black-duck-run-checks: Automatic Black Duck Code Center
+        compliance checks will occur after the build completes
+        (default False)
+    :arg bool black-duck-include-published-artifacts: Include the build's
+        published module artifacts in the license violation checks if they
+        are also used as dependencies for other modules in this build
+        (default False)
+    :arg bool auto-create-missing-component-requests: Auto create
+        missing components in Black Duck Code Center application after
+        the build is completed and deployed in Artifactory
+        (default True)
+    :arg bool auto-discard-stale-component-requests: Auto discard
+        stale components in Black Duck Code Center application after
+        the build is completed and deployed in Artifactory
+        (default True)
+    :arg str include-deployment-pattern: New line or comma separated mappings
+        of build artifacts to published artifacts. Supports Ant-style wildcards
+        mapping to target directories. E.g.: */*.zip=>dir (default '')
+    :arg str exclude-deployment-pattern: New line or comma separated patterns
+        for excluding artifacts from deployment to Artifactory (default '')
+    :arg str include-env-var-pattern: Comma or space-separated list of
+        environment variables that will be included as part of the published
+        build info. Environment variables may contain the * and the ? wildcards
+        (default '')
+    :arg str exclude-env-var-pattern: Comma or space-separated list of
+        environment variables that will be excluded from the published
+        build info (default '*password*,*secret*')
+
+    Example::
+
+    .. literalinclude:: /../../tests/publishers/fixtures/artifactory01.yaml
+
+    """
+
+    artifactory = XML.SubElement(
+        xml_parent, 'org.jfrog.hudson.ArtifactoryRedeployPublisher')
+
+    optional_bool_props = [
+        # xml property name, yaml property name, default value
+        ('deployArtifacts', 'deploy-artifacts', True),
+        ('discardOldBuilds', 'discard-old-builds', False),
+        ('discardBuildArtifacts', 'discard-build-artifacts', False),
+        ('deployBuildInfo', 'publish-build-info', False),
+        ('includeEnvVars', 'include-env-vars', False),
+        ('evenIfUnstable', 'even-if-unstable', False),
+        ('runChecks', 'run-checks', False),
+        ('includePublishArtifacts', 'include-publish-artifacts', False),
+        ('passIdentifiedDownstream', 'pass-identified-downstream', False),
+        ('licenseAutoDiscovery', 'license-auto-discovery', True),
+        ('enableIssueTrackerIntegration', 'enable-issue-tracker-integration',
+            False),
+        ('aggregateBuildIssues', 'aggregate-build-issues', False),
+        ('allowPromotionOfNonStagedBuilds',
+            'allow-promotion-of-non-staged-builds', False),
+        ('blackDuckRunChecks', 'black-duck-run-checks', False),
+        ('blackDuckIncludePublishedArtifacts',
+            'black-duck-include-published-artifacts', False),
+        ('autoCreateMissingComponentRequests',
+            'auto-create-missing-component-requests', True),
+        ('autoDiscardStaleComponentRequests',
+            'auto-discard-stale-component-requests', True),
+        ('filterExcludedArtifactsFromBuild',
+            'filter-excluded-artifacts-from-build', False)
+    ]
+
+    for (xml_prop, yaml_prop, default_value) in optional_bool_props:
+        XML.SubElement(artifactory, xml_prop).text = str(data.get(
+            yaml_prop, default_value)).lower()
+
+    optional_str_props = [
+        ('scopes', 'scopes'),
+        ('violationRecipients', 'violation-recipients'),
+        ('matrixParams', 'matrix-params'),
+        ('blackDuckAppName', 'black-duck-app-name'),
+        ('blackDuckAppVersion', 'black-duck-app-version'),
+        ('blackDuckReportRecipients', 'black-duck-report-recipients'),
+        ('blackDuckScopes', 'black-duck-scopes')
+    ]
+
+    for (xml_prop, yaml_prop) in optional_str_props:
+        XML.SubElement(artifactory, xml_prop).text = data.get(
+            yaml_prop, '')
+
+    details = XML.SubElement(artifactory, 'details')
+    XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
+    XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
+    XML.SubElement(details, 'repositoryKey').text = data.get(
+        'release-repo-key', '')
+    XML.SubElement(details, 'snapshotsRepositoryKey').text = data.get(
+        'snapshot-repo-key', '')
+
+    plugin = XML.SubElement(details, 'stagingPlugin')
+    XML.SubElement(plugin, 'pluginName').text = 'None'
+
+    deployment_patterns = XML.SubElement(
+        artifactory, 'artifactDeploymentPatterns')
+    XML.SubElement(deployment_patterns, 'includePatterns').text = data.get(
+        'include-deployment-pattern', '')
+    XML.SubElement(deployment_patterns, 'excludePatterns').text = data.get(
+        'exclude-deployment-pattern', '')
+
+    deployment_patterns = XML.SubElement(artifactory, 'envVarsPatterns')
+    XML.SubElement(deployment_patterns, 'includePatterns').text = data.get(
+        'include-env-var-pattern', '')
+    XML.SubElement(deployment_patterns, 'excludePatterns').text = data.get(
+        'exclude-env-var-pattern', '*password*,*secret*')
 
 
 def text_finder(parser, xml_parent, data):
@@ -3392,6 +3598,95 @@ def stash(parser, xml_parent, data):
     XML.SubElement(top, 'commitSha1').text = data.get('commit-sha1', '')
     XML.SubElement(top, 'includeBuildNumberInKey').text = str(
         data.get('include-build-number', False)).lower()
+
+
+def dependency_check(parser, xml_parent, data):
+    """yaml: dependency-check
+    Dependency-Check is an open source utility that identifies project
+    dependencies and checks if there are any known, publicly disclosed,
+    vulnerabilities.
+
+    https://wiki.jenkins-ci.org/display/JENKINS/OWASP+Dependency-Check+Plugin.
+
+    :arg str healthy: Report health as 100% when the number of warnings is less
+        than this value
+    :arg str un-healthy: Report health as 0% when the number of warnings is
+        greater than this value
+    :arg str threshold-limit: determines which warning priorities should be
+        considered when evaluating the build stability and health (Default low)
+    :arg str default-encoding: the default encoding to be used when reading
+        and parsing files
+    :arg bool can-run-on-failed: determines whether the plug-in can run for
+        failed builds, too (Default false)
+    :arg bool use-previous-build-as-reference: determines whether to always
+        use the previous build as the reference build (Default false)
+    :arg bool use-stable-build-as-reference: determines whether only stable
+        builds should be used as reference builds or not (Default false)
+    :arg bool use-delta-values: determines whether the absolute annotations
+        delta or the actual annotations set difference should be used to
+            evaluate the build stability (Default false)
+    :arg str unstable-total-all: annotation threshold
+    :arg str unstable-total-high: annotation threshold
+    :arg str unstable-total-normal: annotation threshold
+    :arg str unstable-total-low: annotation threshold
+    :arg str failed-total-all: annotation threshold
+    :arg str failed-total-high: annotation threshold
+    :arg str failed-total-normal: annotation threshold
+    :arg str failed-total-low: annotation threshold
+    :arg bool should-detect-modules: determines whether module names should
+        be derived from Maven POM or Ant build files (Default false)
+    :arg str pattern: Ant file-set pattern to scan for PMD files
+
+    Example:
+
+    .. literalinclude::
+        /../../tests/publishers/fixtures/dependency-check001.yaml
+       :language: yaml
+    """
+
+    dependency_check = XML.SubElement(
+        xml_parent,
+        'org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher')
+
+    XML.SubElement(dependency_check, 'healthy').text = data.get('healthy', '')
+    XML.SubElement(dependency_check, 'unHealthy').text = \
+        data.get('un-healthy', '')
+    XML.SubElement(dependency_check, 'thresholdLimit').text = \
+        data.get('threshold-limit', 'low')
+    XML.SubElement(dependency_check, 'pluginName').text = '[DependencyCheck]'
+    XML.SubElement(dependency_check, 'defaultEncoding').text = \
+        data.get('default-encoding', '')
+    XML.SubElement(dependency_check, 'canRunOnFailed').text = \
+        data.get('can-run-on-failed', False)
+    XML.SubElement(dependency_check, 'usePreviousBuildAsReference').text = \
+        data.get('use-previous-build-as-reference', False)
+    XML.SubElement(dependency_check, 'useStableBuildAsReference').text = \
+        data.get('use-stable-build-as-reference', False)
+    XML.SubElement(dependency_check, 'useDeltaValues').text = \
+        data.get('use-delta-values', False)
+
+    # thresholds
+    thresholds = XML.SubElement(dependency_check, 'thresholds')
+    XML.SubElement(thresholds, 'unstableTotalAll').text = \
+        data.get('unstable-total-all', '')
+    XML.SubElement(thresholds, 'unstableTotalHigh').text = \
+        data.get('unstable-total-high', '')
+    XML.SubElement(thresholds, 'unstableTotalNormal').text = \
+        data.get('unstable-total-normal', '')
+    XML.SubElement(thresholds, 'unstableTotalLow').text = \
+        data.get('unstable-total-low', '')
+    XML.SubElement(thresholds, 'failedTotalAll').text = \
+        data.get('failed-total-all', '')
+    XML.SubElement(thresholds, 'failedTotalHigh').text = \
+        data.get('failed-total-high', '')
+    XML.SubElement(thresholds, 'failedTotalNormal').text = \
+        data.get('failed-total-normal', '')
+    XML.SubElement(thresholds, 'failedTotalLow').text = \
+        data.get('failed-total-low', '')
+
+    XML.SubElement(dependency_check, 'shouldDetectModules').text = \
+        data.get('should-detect-modules', False)
+    XML.SubElement(dependency_check, 'pattern').text = data.get('pattern', '')
 
 
 def description_setter(parser, xml_parent, data):
