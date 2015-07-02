@@ -7,12 +7,10 @@
         <hudson.plugins.parameterizedtrigger.BuildTrigger>
           <configs>
             <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-              <configs>
-                <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
-              </configs>
+              <configs class="java.util.Collections$EmptyList" />
               <projects>archive</projects>
               <condition>ALWAYS</condition>
-              <triggerWithNoParameters>false</triggerWithNoParameters>
+              <triggerWithNoParameters>true</triggerWithNoParameters>
             </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           </configs>
         </hudson.plugins.parameterizedtrigger.BuildTrigger>

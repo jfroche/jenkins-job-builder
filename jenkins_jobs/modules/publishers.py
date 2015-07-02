@@ -288,11 +288,14 @@ def trigger_parameterized_builds(parser, xml_parent, data):
                 failOnMissing = XML.SubElement(params, 'failTriggerOnMissing')
                 failOnMissing.text = str(project_def.get('fail-on-missing',
                                                          False)).lower()
+
+
             if ('current-parameters' in project_def
                     and project_def['current-parameters']):
                 XML.SubElement(tconfigs,
                                'hudson.plugins.parameterizedtrigger.'
                                'CurrentBuildParameters')
+
             if ('node-parameters' in project_def
                     and project_def['node-parameters']):
                 XML.SubElement(tconfigs,
@@ -333,10 +336,9 @@ def trigger_parameterized_builds(parser, xml_parent, data):
 
         condition = XML.SubElement(tconfig, 'condition')
         condition.text = project_def.get('condition', 'ALWAYS')
-        trigger_with_no_params = XML.SubElement(tconfig,
-                                                'triggerWithNoParameters')
-        trigger_with_no_params.text = 'false'
 
+        trigger_with_no_params = XML.SubElement(tconfig,'triggerWithNoParameters')
+        trigger_with_no_params.text = str(project_def.get('trigger-with-no-params', False)).lower()
 
 def trigger(parser, xml_parent, data):
     """yaml: trigger
@@ -2119,6 +2121,8 @@ def join_trigger(parser, xml_parent, data):
     """yaml: join-trigger
     Trigger a job after all the immediate downstream jobs have completed
 
+    :arg bool even-if-unstable: if true jobs will trigger even if some
+        downstream jobs are marked as unstable (default false)
     :arg list projects: list of projects to trigger
     :arg list publishers: list of publishers to trigger
     :arg boolean even-if-unstable: whether to trigger when downstream
@@ -2131,17 +2135,16 @@ def join_trigger(parser, xml_parent, data):
     """
     jointrigger = XML.SubElement(xml_parent, 'join.JoinTrigger')
 
-    # Simple Project List
-    joinprojectstext = ','.join(data.get('projects', ['']))
-    XML.SubElement(jointrigger, 'joinProjects').text = joinprojectstext
+    joinProjectsText = ','.join(data.get('projects', ['']))
+    XML.SubElement(jointrigger, 'joinProjects').text = joinProjectsText
 
-    # Simple publishers List
-    joinpublisherstext = ','.join(data.get('publishers', ['']))
-    XML.SubElement(jointrigger, 'joinPublishers').text = joinpublisherstext
+    publishers = XML.SubElement(jointrigger, 'joinPublishers')
+    for pub in data.get('publishers', []):
+        for edited_node in create_publishers(parser, pub):
+            publishers.append(edited_node)
 
-    # Even if downstream unstable
-    XML.SubElement(jointrigger, 'evenIfDownstreamUnstable').text = str(
-        data.get('even-if-unstable', False)).lower()
+    unstable = str(data.get('even-if-unstable', 'false')).lower()
+    XML.SubElement(jointrigger, 'evenIfDownstreamUnstable').text = unstable
 
 
 def jabber(parser, xml_parent, data):

@@ -10,4 +10,4 @@ publishers:
       publishers:
         - trigger-parameterized-builds:
           - project: archive
-            current-parameters: true 
+            trigger-with-no-params: true
