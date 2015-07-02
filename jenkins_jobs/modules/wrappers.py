@@ -1586,11 +1586,12 @@ def artifactory_maven3(parser, xml_parent, data):
         data.get('resolve-staging-plugin', '')
 
     # artifactDeploymentPatterns
-    deployment_patterns = XML.SubElement(artifactory, 'artifactDeploymentPatterns')
+    deployment_patterns = XML.SubElement(artifactory,
+                                         'artifactDeploymentPatterns')
     XML.SubElement(deployment_patterns, 'includePatterns').text = \
         data.get('deployment-include-patterns', '')
     XML.SubElement(deployment_patterns, 'excludePatterns').text = \
-        data.get('deployment-exclude-patterns', '')
+        data.get('deployment-exclude-patterns', '*password*,*secret*')
 
     optional_bool_props = [
         # xml property name, yaml property name, default value

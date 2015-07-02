@@ -1123,12 +1123,12 @@ def maven_builder(parser, xml_parent, data):
 
     required = {
         'mavenName': 'name',
-        'goals': 'goals',
+        'goals': 'goals'
     }
 
     for key in required:
         try:
-            XML.SubElement(maven, key).text = data[required[key]]
+            XML.SubElement(maven, key).text = str(data[required[key]])
         except KeyError:
             raise MissingAttributeError(required[key])
 

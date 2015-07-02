@@ -1,14 +1,17 @@
-<org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher>
-    <healthy/>
-    <unHealthy/>
-    <thresholdLimit>low</thresholdLimit>
-    <pluginName>[DependencyCheck]</pluginName>
-    <defaultEncoding/>
-    <canRunOnFailed>false</canRunOnFailed>
-    <usePreviousBuildAsReference>false</usePreviousBuildAsReference>
-    <useStableBuildAsReference>false</useStableBuildAsReference>
-    <useDeltaValues>false</useDeltaValues>
-    <thresholds>
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+  <publishers>
+    <org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher>
+      <healthy/>
+      <unHealthy/>
+      <thresholdLimit>low</thresholdLimit>
+      <pluginName>[DependencyCheck]</pluginName>
+      <defaultEncoding/>
+      <canRunOnFailed>false</canRunOnFailed>
+      <useStableBuildAsReference>false</useStableBuildAsReference>
+      <usePreviousBuildAsReference>false</usePreviousBuildAsReference>
+      <useDeltaValues>false</useDeltaValues>
+      <thresholds>
         <unstableTotalAll/>
         <unstableTotalHigh/>
         <unstableTotalNormal/>
@@ -17,7 +20,11 @@
         <failedTotalHigh/>
         <failedTotalNormal/>
         <failedTotalLow/>
-    </thresholds>
-    <shouldDetectModules>false</shouldDetectModules>
-    <pattern>**/dependency-check-report.xml</pattern>
-</org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher>
+      </thresholds>
+      <shouldDetectModules>false</shouldDetectModules>
+      <dontComputeNew>true</dontComputeNew>
+      <doNotResolveRelativePaths>false</doNotResolveRelativePaths>
+      <pattern>**/dependency-check-report.xml</pattern>
+    </org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher>
+  </publishers>
+</project>

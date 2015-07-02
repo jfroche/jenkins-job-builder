@@ -1446,22 +1446,6 @@ def email(parser, xml_parent, data):
         data.get('send-to-individuals', False)).lower()
 
 
-def display_upstream_changes(parser, xml_parent, data):
-    """yaml: display_upstream_changes
-    Displays all upstream changes on a build's summary page.
-
-    Example:
-
-    .. literalinclude::
-        /../../tests/publishers/fixtures/display_upstream_changes001.yaml
-       :language: yaml
-    """
-
-    XML.SubElement(xml_parent,
-                   'jenkins.plugins.displayupstreamchanges.'
-                   'DisplayUpstreamChangesRecorder')
-
-
 def claim_build(parser, xml_parent, data):
     """yaml: claim-build
     Claim build failures
@@ -3648,45 +3632,8 @@ def dependency_check(parser, xml_parent, data):
         xml_parent,
         'org.jenkinsci.plugins.DependencyCheck.DependencyCheckPublisher')
 
-    XML.SubElement(dependency_check, 'healthy').text = data.get('healthy', '')
-    XML.SubElement(dependency_check, 'unHealthy').text = \
-        data.get('un-healthy', '')
-    XML.SubElement(dependency_check, 'thresholdLimit').text = \
-        data.get('threshold-limit', 'low')
-    XML.SubElement(dependency_check, 'pluginName').text = '[DependencyCheck]'
-    XML.SubElement(dependency_check, 'defaultEncoding').text = \
-        data.get('default-encoding', '')
-    XML.SubElement(dependency_check, 'canRunOnFailed').text = \
-        data.get('can-run-on-failed', False)
-    XML.SubElement(dependency_check, 'usePreviousBuildAsReference').text = \
-        data.get('use-previous-build-as-reference', False)
-    XML.SubElement(dependency_check, 'useStableBuildAsReference').text = \
-        data.get('use-stable-build-as-reference', False)
-    XML.SubElement(dependency_check, 'useDeltaValues').text = \
-        data.get('use-delta-values', False)
-
-    # thresholds
-    thresholds = XML.SubElement(dependency_check, 'thresholds')
-    XML.SubElement(thresholds, 'unstableTotalAll').text = \
-        data.get('unstable-total-all', '')
-    XML.SubElement(thresholds, 'unstableTotalHigh').text = \
-        data.get('unstable-total-high', '')
-    XML.SubElement(thresholds, 'unstableTotalNormal').text = \
-        data.get('unstable-total-normal', '')
-    XML.SubElement(thresholds, 'unstableTotalLow').text = \
-        data.get('unstable-total-low', '')
-    XML.SubElement(thresholds, 'failedTotalAll').text = \
-        data.get('failed-total-all', '')
-    XML.SubElement(thresholds, 'failedTotalHigh').text = \
-        data.get('failed-total-high', '')
-    XML.SubElement(thresholds, 'failedTotalNormal').text = \
-        data.get('failed-total-normal', '')
-    XML.SubElement(thresholds, 'failedTotalLow').text = \
-        data.get('failed-total-low', '')
-
-    XML.SubElement(dependency_check, 'shouldDetectModules').text = \
-        data.get('should-detect-modules', False)
-    XML.SubElement(dependency_check, 'pattern').text = data.get('pattern', '')
+    # trends
+    build_trends_publisher('[DependencyCheck]', dependency_check, data)
 
 
 def description_setter(parser, xml_parent, data):

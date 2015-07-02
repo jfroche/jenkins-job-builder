@@ -611,8 +611,6 @@ class Properties(jenkins_jobs.modules.base.Base):
 
     def gen_xml(self, parser, xml_parent, data):
 
-        p = data.get('project-type', 'freestyle')
-
         properties = xml_parent.find('properties')
         if properties is None:
             properties = XML.SubElement(xml_parent, 'properties')
