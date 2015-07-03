@@ -7,7 +7,7 @@
         <hudson.plugins.parameterizedtrigger.BuildTrigger>
           <configs>
             <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
-              <configs class="java.util.Collections$EmptyList" />
+              <configs class="java.util.Collections$EmptyList"/>
               <projects>archive</projects>
               <condition>ALWAYS</condition>
               <triggerWithNoParameters>true</triggerWithNoParameters>

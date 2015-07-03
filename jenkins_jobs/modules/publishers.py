@@ -289,7 +289,6 @@ def trigger_parameterized_builds(parser, xml_parent, data):
                 failOnMissing.text = str(project_def.get('fail-on-missing',
                                                          False)).lower()
 
-
             if ('current-parameters' in project_def
                     and project_def['current-parameters']):
                 XML.SubElement(tconfigs,
@@ -337,8 +336,11 @@ def trigger_parameterized_builds(parser, xml_parent, data):
         condition = XML.SubElement(tconfig, 'condition')
         condition.text = project_def.get('condition', 'ALWAYS')
 
-        trigger_with_no_params = XML.SubElement(tconfig,'triggerWithNoParameters')
-        trigger_with_no_params.text = str(project_def.get('trigger-with-no-params', False)).lower()
+        trigger_with_no_params = XML.SubElement(tconfig,
+                                                'triggerWithNoParameters')
+        trigger_with_no_params.text = \
+            str(project_def.get('trigger-with-no-params', False)).lower()
+
 
 def trigger(parser, xml_parent, data):
     """yaml: trigger
