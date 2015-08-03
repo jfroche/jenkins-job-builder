@@ -9,8 +9,7 @@ RUN apt-get update \
     # install python deps
     && easy_install pip \
     && pip install PyYAML \
-    && pip install -Iv https://pypi.python.org/packages/source/p/pbr/pbr-0.9.0.tar.gz \
-    && pip install six
+    && pip install six pbr
 
 RUN mkdir /opt/jenkins-job-builder
 ADD . /opt/jenkins-job-builder
