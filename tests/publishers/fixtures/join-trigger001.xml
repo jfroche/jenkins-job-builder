@@ -14,6 +14,14 @@
               <condition>ALWAYS</condition>
               <triggerWithNoParameters>false</triggerWithNoParameters>
             </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+            <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+              <configs>
+                <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+              </configs>
+              <projects>cleanup</projects>
+              <condition>ALWAYS</condition>
+              <triggerWithNoParameters>false</triggerWithNoParameters>
+            </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           </configs>
         </hudson.plugins.parameterizedtrigger.BuildTrigger>
       </joinPublishers>
