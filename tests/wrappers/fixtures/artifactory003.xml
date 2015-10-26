@@ -4,7 +4,7 @@
     <org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator>
       <details>
         <artifactoryName>test</artifactoryName>
-        <artifactoryUrl>http://artifactory.devaws.dataxu.net/artifactory</artifactoryUrl>
+        <artifactoryUrl>http://artifactory.example.net/artifactory</artifactoryUrl>
         <deployReleaseRepository>
           <keyFromText/>
           <keyFromSelect/>
@@ -19,7 +19,7 @@
       </details>
       <resolverDetails>
         <artifactoryName>test</artifactoryName>
-        <artifactoryUrl>http://artifactory.devaws.dataxu.net/artifactory</artifactoryUrl>
+        <artifactoryUrl>http://artifactory.example.net/artifactory</artifactoryUrl>
         <resolveSnapshotRepository>
           <keyFromText/>
           <keyFromSelect/>
@@ -33,38 +33,38 @@
         <stagingPlugin/>
       </resolverDetails>
       <artifactDeploymentPatterns>
-        <includePatterns/>
-        <excludePatterns>*password*,*secret*</excludePatterns>
+        <includePatterns>*.zip=&gt;results</includePatterns>
+        <excludePatterns/>
       </artifactDeploymentPatterns>
+      <envVarsPatterns>
+        <includePatterns>PROJECT_*,ORG_*</includePatterns>
+        <excludePatterns/>
+      </envVarsPatterns>
+      <matrixParams>custom_prop=${PROJECT_ENV_VAR}</matrixParams>
+      <scopes/>
+      <violationRecipients/>
+      <blackDuckAppName/>
+      <blackDuckAppVersion/>
+      <blackDuckReportRecipients/>
+      <blackDuckScopes/>
       <deployArtifacts>true</deployArtifacts>
       <discardOldBuilds>false</discardOldBuilds>
-      <discardBuildArtifacts>true</discardBuildArtifacts>
+      <discardBuildArtifacts>false</discardBuildArtifacts>
       <deployBuildInfo>false</deployBuildInfo>
-      <includeEnvVars>false</includeEnvVars>
+      <includeEnvVars>true</includeEnvVars>
       <runChecks>false</runChecks>
       <includePublishArtifacts>false</includePublishArtifacts>
       <licenseAutoDiscovery>true</licenseAutoDiscovery>
       <enableIssueTrackerIntegration>false</enableIssueTrackerIntegration>
-      <enableResolveArtifacts>false</enableResolveArtifacts>
       <aggregateBuildIssues>false</aggregateBuildIssues>
       <blackDuckRunChecks>false</blackDuckRunChecks>
       <blackDuckIncludePublishedArtifacts>false</blackDuckIncludePublishedArtifacts>
       <autoCreateMissingComponentRequests>true</autoCreateMissingComponentRequests>
       <autoDiscardStaleComponentRequests>true</autoDiscardStaleComponentRequests>
+      <filterExcludedArtifactsFromBuild>false</filterExcludedArtifactsFromBuild>
+      <enableResolveArtifacts>false</enableResolveArtifacts>
       <disableLicenseAutoDiscovery>false</disableLicenseAutoDiscovery>
       <recordAllDependencies>false</recordAllDependencies>
-      <filterExcludedArtifactsFromBuild>false</filterExcludedArtifactsFromBuild>
-      <scopes/>
-      <violationRecipients/>
-      <matrixParams/>
-      <blackDuckAppName/>
-      <blackDuckAppVersion/>
-      <blackDuckReportRecipients/>
-      <blackDuckScopes/>
-      <envVarsPatterns>
-        <includePatterns/>
-        <excludePatterns>*password*,*secret*</excludePatterns>
-      </envVarsPatterns>
     </org.jfrog.hudson.maven3.ArtifactoryMaven3Configurator>
   </buildWrappers>
 </project>

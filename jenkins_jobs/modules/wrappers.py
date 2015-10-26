@@ -31,6 +31,11 @@ from jenkins_jobs.errors import (JenkinsJobsException,
                                  MissingAttributeError)
 from jenkins_jobs.modules.builders import create_builders
 from jenkins_jobs.modules.helpers import config_file_provider_builder
+from jenkins_jobs.modules.helpers import artifactory_common_details
+from jenkins_jobs.modules.helpers import artifactory_repository
+from jenkins_jobs.modules.helpers import artifactory_deployment_patterns
+from jenkins_jobs.modules.helpers import artifactory_env_vars_patterns
+from jenkins_jobs.modules.helpers import artifactory_optional_props
 
 logger = logging.getLogger(__name__)
 
@@ -1561,19 +1566,109 @@ def xvfb(parser, xml_parent, data):
         'shutdown-with-build', False)).lower()
 
 
-def artifactory(parser, xml_parent, data):
-    """ yaml: artifactory
-    Wrapper for Maven projects. Requires the Artifactory plugin.
+def android_emulator(parser, xml_parent, data):
+    """yaml: android-emulator
+    Automates many Android development tasks including SDK installation,
+    build file generation, emulator creation and launch,
+    APK (un)installation...
+    Requires the Jenkins :jenkins-wiki:`Android Emulator Plugin
+    <Android+Emulator+Plugin>`.
+
+    :arg str avd: Enter the name of an existing Android emulator configuration.
+        If this is exclusive with the 'os' arg.
+    :arg str os: Can be an OS version, target name or SDK add-on
+    :arg str screen-density: Density in dots-per-inch (dpi) or as an alias,
+        e.g. "160" or "mdpi". (default mdpi)
+    :arg str screen-resolution: Can be either a named resolution or explicit
+        size, e.g. "WVGA" or "480x800". (default WVGA)
+    :arg str locale: Language and country pair. (default en_US)
+    :arg str target-abi: Name of the ABI / system image to be used. (optional)
+    :arg str sd-card: sd-card size e.g. "32M" or "10240K". (optional)
+    :arg bool wipe: if true, the emulator will have its user data reset at
+        start-up (default false)
+    :arg bool show-window: if true, the Android emulator user interface will
+        be displayed on screen during the build. (default false)
+    :arg bool snapshot: Start emulator from stored state (default false)
+    :arg bool delete: Delete Android emulator at the end of build
+        (default false)
+    :arg int startup-delay: Wait this many seconds before attempting
+        to start the emulator (default 0)
+    :arg str commandline-options: Will be given when starting the
+        Android emulator executable (optional)
+    :arg str exe: The emulator executable. (optional)
+    :arg list hardware-properties: Dictionary of hardware properties. Allows
+        you to override the default values for an AVD. (optional)
+
+    Example:
+
+    .. literalinclude:: /../../tests/wrappers/fixtures/android003.yaml
+    """
+    root = XML.SubElement(xml_parent,
+                          'hudson.plugins.android__emulator.AndroidEmulator')
+
+    if data.get('avd') and data.get('os'):
+        raise JenkinsJobsException("'avd' and 'os' options are "
+                                   "exclusive, please pick one only")
+
+    if not data.get('avd') and not data.get('os'):
+        raise JenkinsJobsException("AndroidEmulator requires an AVD name or"
+                                   "OS version to run: specify 'os' or 'avd'")
+
+    if data.get('avd'):
+        XML.SubElement(root, 'avdName').text = str(data['avd'])
+
+    if data.get('os'):
+        XML.SubElement(root, 'osVersion').text = str(data['os'])
+        XML.SubElement(root, 'screenDensity').text = str(
+            data.get('screen-density', 'mdpi'))
+        XML.SubElement(root, 'screenResolution').text = str(
+            data.get('screen-resolution', 'WVGA'))
+        XML.SubElement(root, 'deviceLocale').text = str(
+            data.get('locale', 'en_US'))
+        XML.SubElement(root, 'targetAbi').text = str(
+            data.get('target-abi', ''))
+        XML.SubElement(root, 'sdCardSize').text = str(data.get('sd-card', ''))
+
+    hardware = XML.SubElement(root, 'hardwareProperties')
+    for prop_name, prop_val in data.get('hardware-properties', {}).items():
+        prop_node = XML.SubElement(hardware,
+                                   'hudson.plugins.android__emulator'
+                                   '.AndroidEmulator_-HardwareProperty')
+        XML.SubElement(prop_node, 'key').text = str(prop_name)
+        XML.SubElement(prop_node, 'value').text = str(prop_val)
+
+    XML.SubElement(root, 'wipeData').text = str(
+        data.get('wipe', False)).lower()
+    XML.SubElement(root, 'showWindow').text = str(
+        data.get('show-window', False)).lower()
+    XML.SubElement(root, 'useSnapshots').text = str(
+        data.get('snapshot', False)).lower()
+    XML.SubElement(root, 'deleteAfterBuild').text = str(
+        data.get('delete', False)).lower()
+    XML.SubElement(root, 'startupDelay').text = str(
+        data.get('startup-delay', 0))
+    XML.SubElement(root, 'commandLineOptions').text = str(
+        data.get('commandline-options', ''))
+    XML.SubElement(root, 'executable').text = str(data.get('exe', ''))
+
+
+def artifactory_maven(parser, xml_parent, data):
+    """ yaml: artifactory-maven
+    Wrapper for non-Maven projects. Requires the
+    :jenkins-wiki:`Artifactory Plugin <Artifactory+Plugin>`
 
     :arg str url: URL of the Artifactory server. e.g.
-        http://my.artifactory.com/artifactory (default: '')
+        http://www.jfrog.com/artifactory/ (default '')
     :arg str name: Artifactory user with permissions use for
         connected to the selected Artifactory Server
         (default '')
     :arg str repo-key: Name of the repository to search for
-        artifact dependencies (default: '')
-    :arg str release-repo-key: Release repository name (default '')
-    :arg str snapshot-repo-key: Snapshots repository name (default '')
+        artifact dependencies. Provide a single repo-key or provide
+        separate release-repo-key and snapshot-repo-key.
+    :arg str release-repo-key: Release repository name. Value of
+        repo-key take priority over release-repo-key if provided.
+    :arg str snapshot-repo-key: Snapshots repository name. Value of
+        repo-key take priority over release-repo-key if provided.
 
     Example:
 
@@ -1588,29 +1683,108 @@ def artifactory(parser, xml_parent, data):
 
     # details
     details = XML.SubElement(artifactory, 'details')
-    XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
-    XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
+    artifactory_common_details(details, data)
+
     if 'repo-key' in data:
-        XML.SubElement(details, 'downloadRepositoryKey').text = \
-            data['repo-key']
+        XML.SubElement(
+            details, 'downloadRepositoryKey').text = data['repo-key']
     else:
-        XML.SubElement(details, 'downloadSnapshotRepositoryKey').text = \
-            data.get('snapshot-repo-key', '')
-        XML.SubElement(details, 'downloadReleaseRepositoryKey').text = \
-            data.get('release-repo-key', '')
+        XML.SubElement(
+            details, 'downloadSnapshotRepositoryKey').text = data.get(
+                'snapshot-repo-key', '')
+        XML.SubElement(
+            details, 'downloadReleaseRepositoryKey').text = data.get(
+                'release-repo-key', '')
 
 
-def artifactory_maven3(parser, xml_parent, data):
-    """ yaml: artifactory
+def artifactory_generic(parser, xml_parent, data):
+    """ yaml: artifactory-generic
+    Wrapper for non-Maven projects. Requires the
+    :jenkins-wiki:`Artifactory Plugin <Artifactory+Plugin>`
+
+    :arg str url: URL of the Artifactory server. e.g.
+        http://www.jfrog.com/artifactory/ (default: '')
+    :arg str name: Artifactory user with permissions use for
+        connected to the selected Artifactory Server
+        (default '')
+    :arg str repo-key: Release repository name (default '')
+    :arg str snapshot-repo-key: Snapshots repository name (default '')
+    :arg list deploy-pattern: List of patterns for mappings
+        build artifacts to published artifacts. Supports Ant-style wildcards
+        mapping to target directories. E.g.: */*.zip=>dir (default [])
+    :arg list resolve-pattern: List of references to other
+        artifacts that this build should use as dependencies.
+    :arg list matrix-params: List of properties to attach to all deployed
+        artifacts in addition to the default ones: build.name, build.number,
+        and vcs.revision (default [])
+    :arg bool deploy-build-info: Deploy jenkins build metadata with
+        artifacts to Artifactory (default False)
+    :arg bool env-vars-include: Include environment variables accessible by
+        the build process. Jenkins-specific env variables are always included.
+        Use the env-vars-include-patterns and env-vars-exclude-patterns to
+        filter the environment variables published to artifactory.
+        (default False)
+    :arg list env-vars-include-patterns: List of environment variable patterns
+        for including env vars as part of the published build info. Environment
+        variables may contain the * and the ? wildcards (default [])
+    :arg list env-vars-exclude-patterns: List of environment variable patterns
+        that determine the env vars excluded from the published build info
+        (default [])
+    :arg bool discard-old-builds:
+        Remove older build info from Artifactory (default False)
+    :arg bool discard-build-artifacts:
+        Remove older build artifacts from Artifactory (default False)
+
+    Example:
+
+    .. literalinclude:: /../../tests/wrappers/fixtures/artifactory002.yaml
+       :language: yaml
+
+    """
+
+    artifactory = XML.SubElement(
+        xml_parent,
+        'org.jfrog.hudson.generic.ArtifactoryGenericConfigurator')
+
+    # details
+    details = XML.SubElement(artifactory, 'details')
+    artifactory_common_details(details, data)
+
+    XML.SubElement(details, 'repositoryKey').text = data.get('repo-key', '')
+    XML.SubElement(details, 'snapshotsRepositoryKey').text = data.get(
+        'snapshot-repo-key', '')
+
+    XML.SubElement(artifactory, 'deployPattern').text = ','.join(data.get(
+        'deploy-pattern', []))
+    XML.SubElement(artifactory, 'resolvePattern').text = ','.join(
+        data.get('resolve-pattern', []))
+    XML.SubElement(artifactory, 'matrixParams').text = ','.join(
+        data.get('matrix-params', []))
+
+    XML.SubElement(artifactory, 'deployBuildInfo').text = str(
+        data.get('deploy-build-info', False)).lower()
+    XML.SubElement(artifactory, 'includeEnvVars').text = str(
+        data.get('env-vars-include', False)).lower()
+    XML.SubElement(artifactory, 'discardOldBuilds').text = str(
+        data.get('discard-old-builds', False)).lower()
+    XML.SubElement(artifactory, 'discardBuildArtifacts').text = str(
+        data.get('discard-build-artifacts', True)).lower()
+
+    # envVarsPatterns
+    artifactory_env_vars_patterns(artifactory, data)
+
+
+def artifactory_maven_freestyle(parser, xml_parent, data):
+    """ yaml: artifactory-maven-freestyle
     Wrapper for Free Stype projects. Requires the Artifactory plugin.
+    Requires :jenkins-wiki:`Artifactory Plugin <Artifactory+Plugin>`
 
-    :arg str url: Artifactory server url (default '')
+    :arg str url: URL of the Artifactory server. e.g.
+        http://www.jfrog.com/artifactory/ (default: '')
     :arg str name: Artifactory user with permissions use for
         connected to the selected Artifactory Server (default '')
     :arg str release-repo-key: Release repository name (default '')
     :arg str snapshot-repo-key: Snapshots repository name (default '')
-    :arg bool deploy-artifacts: Push artifacts to the Artifactory
-        Server (default True)
     :arg bool publish-build-info: Push build metadata with artifacts
         (default False)
     :arg bool discard-old-builds:
@@ -1645,8 +1819,8 @@ def artifactory_maven3(parser, xml_parent, data):
         all scopes will be checked (default '')
     :arg str violation-recipients: Recipients that need to be notified
         of license violations in the build info (default '')
-    :arg str matrix-params: Semicolon-separated list of properties to
-        attach to all deployed artifacts in addition to the default ones:
+    :arg list matrix-params: List of properties to attach to all
+        deployed artifacts in addition to the default ones:
         build.name, build.number, and vcs.revision (default '')
     :arg str black-duck-app-name: The existing Black Duck Code Center
         application name (default '')
@@ -1673,18 +1847,26 @@ def artifactory_maven3(parser, xml_parent, data):
         stale components in Black Duck Code Center application after
         the build is completed and deployed in Artifactory
         (default True)
-    :arg str include-deployment-pattern: New line or comma separated mappings
-        of build artifacts to published artifacts. Supports Ant-style wildcards
-        mapping to target directories. E.g.: */*.zip=>dir (default '')
-    :arg str exclude-deployment-pattern: New line or comma separated patterns
-        for excluding artifacts from deployment to Artifactory (default '')
-    :arg str include-env-var-pattern: Comma or space-separated list of
-        environment variables that will be included as part of the published
-        build info. Environment variables may contain the * and the ? wildcards
-        (default '')
-    :arg str exclude-env-var-pattern: Comma or space-separated list of
-        environment variables that will be excluded from the published
-        build info (default '*password*,*secret*')
+    :arg bool deploy-artifacts: Push artifacts to the Artifactory
+        Server. The specific artifacts to push are controlled using
+        the deployment-include-patterns and deployment-exclude-patterns.
+        (default True)
+    :arg list deployment-include-patterns: List of patterns for including
+        build artifacts to publish to artifactory. (default[]')
+    :arg list deployment-exclude-patterns: List of patterns
+        for excluding artifacts from deployment to Artifactory
+        (default [])
+    :arg bool env-vars-include: Include environment variables
+        accessible by the build process. Jenkins-specific env variables
+        are always included. Environment variables can be filtered using
+        the env-vars-include-patterns nad env-vars-exclude-patterns.
+        (default False)
+    :arg list env-vars-include-patterns: List of environment variable patterns
+        that will be included as part of the published build info. Environment
+        variables may contain the * and the ? wildcards (default [])
+    :arg list env-vars-exclude-patterns: List of environment variable patterns
+        that will be excluded from the published build info
+        (default [])
 
     Example:
 
@@ -1699,190 +1881,41 @@ def artifactory_maven3(parser, xml_parent, data):
 
     # details
     details = XML.SubElement(artifactory, 'details')
-    XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
-    XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
+    artifactory_common_details(details, data)
 
     deploy_release = XML.SubElement(details, 'deployReleaseRepository')
-    XML.SubElement(deploy_release, 'keyFromText').text = \
-        data.get('deploy-release-repo-key', '')
-    XML.SubElement(deploy_release, 'keyFromSelect').text = \
-        data.get('deploy-release-repo-key', '')
-    XML.SubElement(deploy_release, 'dynamicMode').text = \
-        str(data.get('deploy-dynamic-mode', False)).lower()
+    artifactory_repository(deploy_release, data, 'release')
 
     deploy_snapshot = XML.SubElement(details, 'deploySnapshotRepository')
-    XML.SubElement(deploy_snapshot, 'keyFromText').text = \
-        data.get('deploy-snapshot-repo-key', '')
-    XML.SubElement(deploy_snapshot, 'keyFromSelect').text = \
-        data.get('deploy-snapshot-repo-key', '')
-    XML.SubElement(deploy_snapshot, 'dynamicMode').text = \
-        str(data.get('deploy-dynamic-mode', False)).lower()
+    artifactory_repository(deploy_snapshot, data, 'snapshot')
 
-    XML.SubElement(details, 'stagingPlugin').text = \
-        data.get('resolve-staging-plugin', '')
+    XML.SubElement(details, 'stagingPlugin').text = data.get(
+        'resolve-staging-plugin', '')
 
     # resolverDetails
     resolver = XML.SubElement(artifactory, 'resolverDetails')
-    XML.SubElement(resolver, 'artifactoryName').text = data.get('name', '')
-    XML.SubElement(resolver, 'artifactoryUrl').text = data.get('url', '')
+    artifactory_common_details(resolver, data)
 
     resolve_snapshot = XML.SubElement(resolver, 'resolveSnapshotRepository')
-    XML.SubElement(resolve_snapshot, 'keyFromText').text = \
-        data.get('resolve-snapshot-repo-key', '')
-    XML.SubElement(resolve_snapshot, 'keyFromSelect').text = \
-        data.get('resolve-snapshot-repo-key', '')
-    XML.SubElement(resolve_snapshot, 'dynamicMode').text = \
-        str(data.get('resolve-dynamic-mode', False)).lower()
+    artifactory_repository(resolve_snapshot, data, 'snapshot')
 
     deploy_release = XML.SubElement(resolver, 'resolveReleaseRepository')
-    XML.SubElement(deploy_release, 'keyFromText').text = \
-        data.get('resolve-release-repo-key-text', '')
-    XML.SubElement(deploy_release, 'keyFromSelect').text = \
-        data.get('resolve-release-repo-key-select', '')
-    XML.SubElement(deploy_release, 'dynamicMode').text = \
-        str(data.get('resolve-dynamic-mode', False)).lower()
+    artifactory_repository(deploy_release, data, 'release')
 
-    XML.SubElement(resolver, 'stagingPlugin').text = \
-        data.get('resolve-staging-plugin', '')
+    XML.SubElement(resolver, 'stagingPlugin').text = data.get(
+        'resolve-staging-plugin', '')
 
     # artifactDeploymentPatterns
-    deployment_patterns = XML.SubElement(artifactory,
-                                         'artifactDeploymentPatterns')
-    XML.SubElement(deployment_patterns, 'includePatterns').text = \
-        data.get('deployment-include-patterns', '')
-    XML.SubElement(deployment_patterns, 'excludePatterns').text = \
-        data.get('deployment-exclude-patterns', '*password*,*secret*')
+    artifactory_deployment_patterns(artifactory, data)
 
-    optional_bool_props = [
-        # xml property name, yaml property name, default value
-        ('deployArtifacts', 'deploy-artifacts', True),
-        ('discardOldBuilds', 'discard-old-builds', False),
-        ('discardBuildArtifacts', 'discard-build-artifacts', True),
-        ('deployBuildInfo', 'publish-build-info', False),
-        ('includeEnvVars', 'include-env-vars', False),
-        ('runChecks', 'run-checks', False),
-        ('includePublishArtifacts', 'include-publish-artifacts', False),
-        ('licenseAutoDiscovery', 'license-auto-discovery', True),
-        ('enableIssueTrackerIntegration', 'enable-issue-tracker-integration',
-            False),
-        ('enableResolveArtifacts', 'enable-resolve-artifacts',
-            False),
-        ('aggregateBuildIssues', 'aggregate-build-issues', False),
-        ('blackDuckRunChecks', 'black-duck-run-checks', False),
-        ('blackDuckIncludePublishedArtifacts',
-            'black-duck-include-published-artifacts', False),
-        ('autoCreateMissingComponentRequests',
-            'auto-create-missing-component-requests', True),
-        ('autoDiscardStaleComponentRequests',
-            'auto-discard-stale-component-requests', True),
-        ('disableLicenseAutoDiscovery',
-            'disable-license-auto-discovery', False),
-        ('recordAllDependencies',
-            'record-all-dependencies', False),
-        ('filterExcludedArtifactsFromBuild',
-            'filter-excluded-artifacts-from-build', False)
-    ]
+    # envVarsPatterns
+    artifactory_env_vars_patterns(artifactory, data)
 
-    for (xml_prop, yaml_prop, default_value) in optional_bool_props:
-        XML.SubElement(artifactory, xml_prop).text = str(data.get(
-            yaml_prop, default_value)).lower()
+    XML.SubElement(artifactory, 'matrixParams').text = ','.join(
+        data.get('matrix-params', []))
 
-    optional_str_props = [
-        ('scopes', 'scopes'),
-        ('violationRecipients', 'violation-recipients'),
-        ('matrixParams', 'matrix-params'),
-        ('blackDuckAppName', 'black-duck-app-name'),
-        ('blackDuckAppVersion', 'black-duck-app-version'),
-        ('blackDuckReportRecipients', 'black-duck-report-recipients'),
-        ('blackDuckScopes', 'black-duck-scopes')
-    ]
-
-    for (xml_prop, yaml_prop) in optional_str_props:
-        XML.SubElement(artifactory, xml_prop).text = data.get(
-            yaml_prop, '')
-
-    env = XML.SubElement(artifactory, 'envVarsPatterns')
-    XML.SubElement(env, 'includePatterns').text = \
-        data.get('env-include-patterns', '')
-    XML.SubElement(env, 'excludePatterns').text = \
-        data.get('env-exclude-patterns', '*password*,*secret*')
-
-
-def generic_artifactory(parser, xml_parent, data):
-    """ yaml: generic-artifactory
-    Wrapper for non-Maven projects. Requires the Artifactory plugin.
-
-    :arg str url: URL of the Artifactory server. e.g.
-        http://my.artifactory.com/artifactory (default: '')
-    :arg str name: Artifactory user with permissions use for
-        connected to the selected Artifactory Server
-        (default '')
-    :arg str repo-key: Release repository name (default '')
-    :arg str snapshot-repo-key: Snapshots repository name (default '')
-    :arg str deploy-pattern: New line or comma separated mappings
-        of build artifacts to published artifacts. Supports Ant-style wildcards
-        mapping to target directories. E.g.: */*.zip=>dir (default '')
-    :arg str resolve-pattern: New line or comma separated references to other
-        artifacts that this build should use as dependencies.
-    :arg str matrix-params: Semicolon-separated list of properties to
-        attach to all deployed artifacts in addition to the default ones:
-        build.name, build.number, and vcs.revision (default '')
-    :arg bool deploy-build-info: Deploy jenkins build metadata with
-        artifacts to Artifactory (default False)
-    :arg bool include-env-vars: Include all environment variables
-        accessible by the build process. Jenkins-specific env variables
-        are always included (default False)
-    :arg str include-env-var-pattern: Comma or space-separated list of
-        environment variables that will be included as part of the published
-        build info. Environment variables may contain the * and the ? wildcards
-        (default '')
-    :arg str exclude-env-var-pattern: Comma or space-separated list of
-        environment variables that will be excluded from the published
-        build info (default '*password*,*secret*')
-    :arg bool discard-old-builds:
-        Remove older build info from Artifactory (default False)
-    :arg bool discard-build-artifacts:
-        Remove older build artifacts from Artifactory (default False)
-
-    Example:
-
-    .. literalinclude:: /../../tests/wrappers/fixtures/artifactory002.yaml
-       :language: yaml
-
-    """
-
-    artifactory = XML.SubElement(
-        xml_parent,
-        'org.jfrog.hudson.generic.ArtifactoryGenericConfigurator')
-
-    details = XML.SubElement(artifactory, 'details')
-    XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
-    XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
-    XML.SubElement(details, 'repositoryKey').text = data.get('repo-key', '')
-    XML.SubElement(details, 'snapshotsRepositoryKey').text = data.get(
-        'snapshot-repo-key', '')
-
-    XML.SubElement(artifactory, 'deployPattern').text = \
-        data.get('deploy-pattern', '')
-    XML.SubElement(artifactory, 'resolvePattern').text = \
-        data.get('resolve-pattern', '')
-    XML.SubElement(artifactory, 'matrixParams').text = \
-        data.get('matrix-params', '')
-    XML.SubElement(artifactory, 'deployBuildInfo').text = \
-        str(data.get('deploy-build-info', False)).lower()
-    XML.SubElement(artifactory, 'includeEnvVars').text = \
-        str(data.get('include-env-vars', False)).lower()
-
-    details = XML.SubElement(artifactory, 'envVarsPatterns')
-    XML.SubElement(details, 'includePatterns').text = \
-        data.get('env-include-patterns', '')
-    XML.SubElement(details, 'excludePatterns').text = \
-        data.get('env-exclude-patterns', '*password*,*secret*')
-
-    XML.SubElement(artifactory, 'discardOldBuilds').text = \
-        str(data.get('discard-old-builds', False)).lower()
-    XML.SubElement(artifactory, 'discardBuildArtifacts').text = \
-        str(data.get('discard-build-artifacts', True)).lower()
+    # optional__props
+    artifactory_optional_props(artifactory, data, 'wrappers')
 
 
 class Wrappers(jenkins_jobs.modules.base.Base):

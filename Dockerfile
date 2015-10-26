@@ -8,6 +8,13 @@ RUN apt-get update \
     && apt-get install --yes --force-yes python-setuptools build-essential python-dev libffi-dev libssl-dev libyaml-dev git \
     # install python deps
     && easy_install pip \
+    && apt-get install git \
+    && pip install testtools \
+    && pip install mock \
+    && pip install testscenarios \
+    && pip install fixtures \
+    && pip install hacking \
+    && pip install setuptools --upgrade \
     && pip install PyYAML \
     && pip install six pbr \
     && pip install pyOpenSSL pyasn1 ndg-httpsclient ordereddict
