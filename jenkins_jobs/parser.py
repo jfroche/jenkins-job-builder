@@ -351,7 +351,27 @@ class YamlParser(object):
             raise JenkinsJobsException("Incompatible values given in job"
                                        " {0}': 'view-type' and 'project-"
                                        "type' both defined".format(name))
+    def getXMLForJob(self, data):
+        view_type = data.get('view-type', None)
+        project_type = data.get('project-type', None)
 
+        if view_type is None:
+            if project_type is None:
+                project_type = 'freestyle'
+            job = self.create_xml(data=data, group='jenkins_jobs.projects',
+                                  name=project_type)
+            return job
+
+        elif project_type is None:
+            view = self.create_xml(data=data, group='jenkins_jobs.views',
+                                   name=view_type)
+            return view
+        else:
+            name = job.get('name', None)
+            raise JenkinsJobsException("Incompatible values given in job"
+                                       " {0}': 'view-type' and 'project-"
+                                       "type' both defined".format(name))
+        
     def gen_xml(self, xml, data):
         for module in self.registry.modules:
             if hasattr(module, 'gen_xml'):

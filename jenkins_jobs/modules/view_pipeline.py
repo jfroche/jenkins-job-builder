@@ -66,7 +66,7 @@ import xml.etree.ElementTree as XML
 import jenkins_jobs.modules.base
 
 
-class Pipeline(jenkins_jobs.modules.base.Base):
+class BuildPipeline(jenkins_jobs.modules.base.Base):
     sequence = 0
 
     def root_xml(self, data):
@@ -144,4 +144,95 @@ class Pipeline(jenkins_jobs.modules.base.Base):
         DH_element = XML.SubElement(root, 'showPipelineDefinitionHeader')
         DH_element.text = 'true' if headers else 'false'
 
+        return root
+
+
+class DeliveryPipeline(jenkins_jobs.modules.base.Base):
+    sequence = 0
+
+    def root_xml(self, data):
+        linktypes = ['Lightbox', 'New Window']
+        root = XML.Element('se.diabol.jenkins.pipeline.DeliveryPipelineView',
+                           {'plugin': 'delivery-pipeline-plugin'})
+        XML.SubElement(root, 'name').text = data['name']
+        desc_text = data.get('description', None)
+        if desc_text is not None:
+            XML.SubElement(root, 'description').text = desc_text
+
+        filterExecutors = data.get('filter-executors', False)
+        XML.SubElement(root, 'filterExecutors').text = 'true' if filterExecutors else 'false'
+
+        filterQueue = data.get('filter-queue', False)
+        XML.SubElement(root, 'filterQueue').text = 'true' if filterQueue else 'false'
+
+        XML.SubElement(root, 'properties',
+                       {'class': 'hudson.model.View$PropertyList'})
+
+        CS = XML.SubElement(root, 'componentSpec')
+        Specs = XML.SubElement(CS, 'se.diabol.jenkins.pipeline.DeliveryPipelineView_-ComponentSpec')
+        
+        viewname = data.get('name', '')
+        XML.SubElement(CS,'name').text = viewname
+        
+        firstjobname = data.get('first-job', '')
+        XML.SubElement(CS, 'firstJob').text = firstjobname
+        
+        lastjobname = data.get('last-job', '')
+        XML.SubElement(CS,'lastJob').text = lastjobname
+        
+        pipelines = str(data.get('no-of-pipelines'))
+        XML.SubElement(root, 'noOfPipelines').text = pipelines
+
+        showAggregatedPipe = str(data.get('show-aggregated-pipeline'))
+        XML.SubElement(root,'showAggregatedPipeline').text= 'true' if showAggregatedPipe else 'false'
+        
+        noofcolumns = str(data.get('no-of-columns'))
+        XML.SubElement(root,'noOfColumns').text=noofcolumns
+        
+        sorting = str(data.get('sorting'))
+        XML.SubElement(root,'sorting').text = 'true' if sorting else 'none'
+        
+        showavatars = str(data.get('show-avatars'))
+        XML.SubElement(root,'showAvatars').text = 'true' if showavatars else 'false'
+        
+        updateinterval = str(data.get('update-interval')    )
+        XML.SubElement(root,'updateInterval').text = updateinterval
+        
+        showchanges = str(data.get('show-changes'))
+        XML.SubElement(root,'showChanges').text = 'true' if showchanges else 'false'
+        
+        allowmanualtrig = str(data.get('allow-manual-triggers'))
+        XML.SubElement(root,'allowManualTriggers').text = 'true' if allowmanualtrig else 'false'
+        
+        showtotalbuildt = str(data.get('show-total-build-time'))
+        XML.SubElement(root,'showTotalBuildTime').text = 'true' if showtotalbuildt else 'false'
+
+        allowrebuild = str(data.get('allow-rebuild'))
+        XML.SubElement(root,'allowRebuild').text = 'true' if allowrebuild else 'false'
+        
+        allowpipestart = str(data.get('allow-pipeline-start'))
+        XML.SubElement(root,'allowPipelineStart').text = 'true' if allowpipestart else 'false'
+        
+        showdesc = str(data.get('show-description'))
+        XML.SubElement(root,'showDescription').text = 'true' if showdesc else 'false'
+        
+        showpromo = str(data.get('show-promotions'))
+        XML.SubElement(root,'showPromotions').text = 'true' if showpromo else 'false'
+        
+        showtestresult = str(data.get('show-test-results'))
+        XML.SubElement(root,'showTestResults').text = 'true' if showtestresult else 'false'
+        
+        showstaticanal= str(data.get('show-static-analysis-results'))
+        XML.SubElement(root,'showStaticAnalysisResults').text = 'true' if showstaticanal else 'false'
+        
+        regexpfirstjob= str(data.get('first-job-regexp'))
+        XML.SubElement(root,'regexpFirstJobs').text = regexpfirstjob
+        
+        xml_jobs = XML.SubElement(view, 'regexpFirstJobs')
+        jobs = data.get('regexp-first-jobs', [])
+        for job in jobs:
+            xml_job = XML.SubElement(xml_jobs, 'se.diabol.jenkins.pipeline.'
+                                           'DeliveryPipelineView_-RegExpSpec')
+            XML.SubElement(xml_job, 'regexp').text = job     
+        
         return root
