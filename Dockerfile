@@ -10,7 +10,7 @@ RUN apt-get update \
     && easy_install pip \
     && pip install PyYAML \
     && pip install six pbr \
-    && pip install pyOpenSSL pyasn1 ndg-httpsclient ordereddict
+    && pip install pyOpenSSL pyasn1 ndg-httpsclient ordereddict multi_key_dict
 
 RUN mkdir /opt/jenkins-job-builder
 ADD . /opt/jenkins-job-builder
