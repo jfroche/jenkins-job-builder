@@ -20,7 +20,7 @@ RUN cd /opt/jenkins-job-builder && python setup.py install \
     && cd /opt \
     && git clone https://github.com/oberthur/python-jenkins \
     && cd python-jenkins \
-    && git checkout ot.0.4.7 \
+    && git checkout ot.0.4.8 \
     && python setup.py install
 
 # clean all cache to clean space
