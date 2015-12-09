@@ -81,11 +81,11 @@ class BuildPipeline(jenkins_jobs.modules.base.Base):
 
         filterExecutors = data.get('filter-executors', False)
         FE_element = XML.SubElement(root, 'filterExecutors')
-        FE_element.text = 'true' if filterExecutors else 'false'
+        FE_element.text = str(filterExecutors).lower()
 
         filterQueue = data.get('filter-queue', False)
         FQ_element = XML.SubElement(root, 'filterQueue')
-        FQ_element.text = 'true' if filterQueue else 'false'
+        FQ_element.text = str(filterQueue).lower()
 
         XML.SubElement(root, 'properties',
                        {'class': 'hudson.model.View$PropertyList'})
@@ -119,30 +119,30 @@ class BuildPipeline(jenkins_jobs.modules.base.Base):
 
         latest_job_only = data.get('latest-job-only', False)
         OLJ_element = XML.SubElement(root, 'triggerOnlyLatestJob')
-        OLJ_element.text = 'true' if latest_job_only else 'false'
+        OLJ_element.text = str(latest_job_only).lower()
 
         manual_trigger = data.get('manual-trigger', False)
         AMT_element = XML.SubElement(root, 'alwaysAllowManualTrigger')
-        AMT_element.text = 'true' if manual_trigger else 'false'
+        AMT_element.text = str(manual_trigger).lower()
 
         show_parameters = data.get('show-parameters', False)
         PP_element = XML.SubElement(root, 'showPipelineParameters')
-        PP_element.text = 'true' if show_parameters else 'false'
+        PP_element.text = str(show_parameters).lower()
 
         parameters_in_headers = data.get('parameters-in-headers', False)
         PIH_element = XML.SubElement(root, 'showPipelineParametersInHeaders')
-        PIH_element.text = 'true' if parameters_in_headers else 'false'
+        PIH_element.text = str(parameters_in_headers).lower()
 
         start_with_parameters = data.get('start-with-parameters', False)
         SWP_element = XML.SubElement(root, 'startsWithParameters')
-        SWP_element.text = 'true' if start_with_parameters else 'false'
+        SWP_element.text = str(start_with_parameters).lower()
 
         refresh_frequency = str(data.get('refresh-frequency', 3))
         XML.SubElement(root, 'refreshFrequency').text = refresh_frequency
 
         headers = data.get('definition-header', False)
         DH_element = XML.SubElement(root, 'showPipelineDefinitionHeader')
-        DH_element.text = 'true' if headers else 'false'
+        DH_element.text = str(headers).lower()
 
         return root
 
@@ -160,10 +160,10 @@ class DeliveryPipeline(jenkins_jobs.modules.base.Base):
             XML.SubElement(root, 'description').text = desc_text
 
         filterExecutors = data.get('filter-executors', False)
-        XML.SubElement(root, 'filterExecutors').text = str(filterExecutors)
+        XML.SubElement(root, 'filterExecutors').text = str(filterExecutors).lower()
 
         filterQueue = data.get('filter-queue', False)
-        XML.SubElement(root, 'filterQueue').text = str(filterQueue)
+        XML.SubElement(root, 'filterQueue').text = str(filterQueue).lower()
 
         XML.SubElement(root, 'properties',
                        {'class': 'hudson.model.View$PropertyList'})
@@ -184,7 +184,7 @@ class DeliveryPipeline(jenkins_jobs.modules.base.Base):
         XML.SubElement(root, 'noOfPipelines').text = pipelines
 
         showAggregatedPipe = str(data.get('show-aggregated-pipeline', False))
-        XML.SubElement(root,'showAggregatedPipeline').text = str(showAggregatedPipe)
+        XML.SubElement(root,'showAggregatedPipeline').text = str(showAggregatedPipe).lower()
 
         noofcolumns = str(data.get('no-of-columns', '1'))
         XML.SubElement(root,'noOfColumns').text=noofcolumns
@@ -193,42 +193,42 @@ class DeliveryPipeline(jenkins_jobs.modules.base.Base):
         XML.SubElement(root,'sorting').text = str(sorting)
 
         showavatars = str(data.get('show-avatars', False))
-        XML.SubElement(root,'showAvatars').text = str(showavatars)
+        XML.SubElement(root,'showAvatars').text = str(showavatars).lower()
 
         updateinterval = str(data.get('update-interval', '10'))
         XML.SubElement(root,'updateInterval').text = updateinterval
 
         showchanges = str(data.get('show-changes', False))
-        XML.SubElement(root,'showChanges').text = str(showchanges)
+        XML.SubElement(root,'showChanges').text = str(showchanges).lower()
 
         allowmanualtrig = str(data.get('allow-manual-triggers', False))
-        XML.SubElement(root,'allowManualTriggers').text = str(allowmanualtrig)
+        XML.SubElement(root,'allowManualTriggers').text = str(allowmanualtrig).lower()
 
         showtotalbuildt = str(data.get('show-total-build-time', False))
-        XML.SubElement(root,'showTotalBuildTime').text = str(showtotalbuildt)
+        XML.SubElement(root,'showTotalBuildTime').text = str(showtotalbuildt).lower()
 
         allowrebuild = str(data.get('allow-rebuild', False))
-        XML.SubElement(root,'allowRebuild').text = str(allowrebuild)
+        XML.SubElement(root,'allowRebuild').text = str(allowrebuild).lower()
 
         allowpipestart = str(data.get('allow-pipeline-start', False))
-        XML.SubElement(root,'allowPipelineStart').text = str(allowpipestart)
+        XML.SubElement(root,'allowPipelineStart').text = str(allowpipestart).lower()
 
         showdesc = str(data.get('show-description', False))
-        XML.SubElement(root,'showDescription').text = str(showdesc)
+        XML.SubElement(root,'showDescription').text = str(showdesc).lower()
 
         showpromo = str(data.get('show-promotions', False))
-        XML.SubElement(root,'showPromotions').text = str(showpromo)
+        XML.SubElement(root,'showPromotions').text = str(showpromo).lower()
 
         showtestresult = str(data.get('show-test-results', False))
-        XML.SubElement(root,'showTestResults').text = str(showtestresult)
+        XML.SubElement(root,'showTestResults').text = str(showtestresult).lower()
 
-        showstaticanal= str(data.get('show-static-analysis-results', False))
-        XML.SubElement(root,'showStaticAnalysisResults').text = str(showstaticanal)
+        showstaticanal = str(data.get('show-static-analysis-results', False))
+        XML.SubElement(root,'showStaticAnalysisResults').text = str(showstaticanal).lower()
 
-        regexpfirstjob= str(data.get('first-job-regexp'))
+        regexpfirstjob = str(data.get('first-job-regexp'))
         XML.SubElement(root,'regexpFirstJobs').text = regexpfirstjob
 
-        xml_jobs = XML.SubElement(view, 'regexpFirstJobs')
+        xml_jobs = XML.SubElement(root, 'regexpFirstJobs')
         jobs = data.get('regexp-first-jobs', [])
         for job in jobs:
             xml_job = XML.SubElement(xml_jobs, 'se.diabol.jenkins.pipeline.'
