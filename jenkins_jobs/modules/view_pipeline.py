@@ -168,7 +168,7 @@ class DeliveryPipeline(jenkins_jobs.modules.base.Base):
         XML.SubElement(root, 'properties',
                        {'class': 'hudson.model.View$PropertyList'})
 
-        CS = XML.SubElement(root, 'componentSpec')
+        CS = XML.SubElement(root, 'componentSpecs')
         Specs = XML.SubElement(CS, 'se.diabol.jenkins.pipeline.DeliveryPipelineView_-ComponentSpec')
 
         viewname = data.get('name', '')
