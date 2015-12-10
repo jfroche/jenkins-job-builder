@@ -172,13 +172,13 @@ class DeliveryPipeline(jenkins_jobs.modules.base.Base):
         Specs = XML.SubElement(CS, 'se.diabol.jenkins.pipeline.DeliveryPipelineView_-ComponentSpec')
 
         viewname = data.get('name', '')
-        XML.SubElement(CS,'name').text = viewname
+        XML.SubElement(Specs,'name').text = viewname
 
         firstjobname = data.get('first-job', '')
-        XML.SubElement(CS, 'firstJob').text = firstjobname
+        XML.SubElement(Specs, 'firstJob').text = firstjobname
 
         lastjobname = data.get('last-job', '')
-        XML.SubElement(CS,'lastJob').text = lastjobname
+        XML.SubElement(Specs,'lastJob').text = lastjobname
 
         pipelines = str(data.get('no-of-pipelines', '3'))
         XML.SubElement(root, 'noOfPipelines').text = pipelines
