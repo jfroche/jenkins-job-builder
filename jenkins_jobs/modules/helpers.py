@@ -192,6 +192,10 @@ def auth_settings(xml_parent, data):
         'job-cancel': 'hudson.model.Item.Cancel',
         'run-delete': 'hudson.model.Run.Delete',
         'run-update': 'hudson.model.Run.Update',
+        'view-create': 'hudson.model.View.Create',
+        'view-configure': 'hudson.model.View.Configure',
+        'view-delete': 'hudson.model.View.Delete',
+        'view-read': 'hudson.model.View.Read',
         'scm-tag': 'hudson.scm.SCM.Tag'
     }
 

@@ -315,6 +315,10 @@ def folder_auth(parser, xml_parent, data):
       job-cancel
       run-delete
       run-update
+      view-create
+      view-delete
+      view-configure
+      view-read
       scm-tag
 
     Example::
@@ -331,6 +335,10 @@ def folder_auth(parser, xml_parent, data):
               - job-cancel
               - run-delete
               - run-update
+              - view-create
+              - view-delete
+              - view-configure
+              - view-read
               - scm-tag
             anonymous:
               - job-discover
@@ -359,6 +367,10 @@ def authorization(parser, xml_parent, data):
       job-cancel
       run-delete
       run-update
+      view-create
+      view-delete
+      view-configure
+      view-read
       scm-tag
 
     Example::
@@ -375,6 +387,10 @@ def authorization(parser, xml_parent, data):
               - job-cancel
               - run-delete
               - run-update
+              - view-create
+              - view-delete
+              - view-configure
+              - view-read
               - scm-tag
             anonymous:
               - job-discover
