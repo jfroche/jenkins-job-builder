@@ -1,0 +1,11 @@
+builders:
+    - testlink:
+        name: testLinkName
+        project: testProjectName
+        plan: testPlanName
+        build: buildName
+        platform: platformName
+        custom-fields: TestClassMethod
+        single-build-steps:
+          - shell: "make a"
+          - shell: "make b"
