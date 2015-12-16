@@ -305,6 +305,7 @@ def folder_auth(parser, xml_parent, data):
     Specifies an authorization matrix for folder
 
     The available rights are:
+      job-create
       job-delete
       job-configure
       job-read
@@ -326,6 +327,7 @@ def folder_auth(parser, xml_parent, data):
       properties:
         - folder-auth:
             admin:
+              - job-create
               - job-delete
               - job-configure
               - job-read
@@ -357,6 +359,7 @@ def authorization(parser, xml_parent, data):
     Specifies an authorization matrix
 
     The available rights are:
+      job-create
       job-delete
       job-configure
       job-read
@@ -378,6 +381,7 @@ def authorization(parser, xml_parent, data):
       properties:
         - authorization:
             admin:
+              - job-create
               - job-delete
               - job-configure
               - job-read
