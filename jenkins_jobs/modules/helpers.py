@@ -204,3 +204,63 @@ def auth_settings(xml_parent, data):
         for perm in perms:
             pe = XML.SubElement(xml_parent, 'permission')
             pe.text = "{0}:{1}".format(mapping[perm], username)
+
+
+def result_junit(xml_parent, data):
+    # Tuples containing: setting name, tag name, default value
+    settings = [
+        ('include-pattern', 'includePattern', ''),
+        ('key-custom-field', 'keyCustomField', ''),
+        ('include-notes', 'includeNotes', False),
+        ('attach-junit', 'attachJUnitXML', False)
+        ]
+
+    for key, tag_name, default in settings:
+        xml_config = XML.SubElement(xml_parent, tag_name)
+        config_value = data.get(key, default)
+
+        if isinstance(default, bool):
+            xml_config.text = str(config_value).lower()
+        else:
+            xml_config.text = str(config_value)
+
+def result_tap(xml_parent, data):
+    # Tuples containing: setting name, tag name, default value
+    settings = [
+        ('include-pattern', 'includePattern', ''),
+        ('key-custom-field', 'keyCustomField', ''),
+        ('include-notes', 'includeNotes', False),
+        ('attach-tap-stream', 'attachTAPStream', False),
+        ('attach-yamlish-attachments', 'attachYAMLishAttachments', False),
+        ('compare-full-path', 'compareFullPath', False)
+        ]
+
+    for key, tag_name, default in settings:
+        xml_config = XML.SubElement(xml_parent, tag_name)
+        config_value = data.get(key, default)
+
+        if isinstance(default, bool):
+            xml_config.text = str(config_value).lower()
+        else:
+            xml_config.text = str(config_value)
+
+
+def result_testng(xml_parent, data):
+    # Tuples containing: setting name, tag name, default value
+    settings = [
+        ('include-pattern', 'includePattern', ''),
+        ('key-custom-field', 'keyCustomField', ''),
+        ('parser', 'parser', ''),
+        ('include-notes', 'includeNotes', False),
+        ('attach-testng', 'attachTestNGXML', False),
+        ('mark-skipped-test-as-blocked', 'markSkippedTestAsBlocked', False)
+        ]
+
+    for key, tag_name, default in settings:
+        xml_config = XML.SubElement(xml_parent, tag_name)
+        config_value = data.get(key, default)
+
+        if isinstance(default, bool):
+            xml_config.text = str(config_value).lower()
+        else:
+            xml_config.text = str(config_value)

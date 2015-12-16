@@ -22,6 +22,14 @@
             <failOnNotRun>false</failOnNotRun>
             <executionOrderComparator />
             <failure>false</failure>
+            <resultSeekers>
+                <hudson.plugins.testlink.result.JUnitMethodNameResultSeeker>
+                    <includePattern>load-cps/target/test-reports/**.xml</includePattern>
+                    <keyCustomField>TestClassMethod</keyCustomField>
+                    <includeNotes>false</includeNotes>
+                    <attachJUnitXML>false</attachJUnitXML>
+                </hudson.plugins.testlink.result.JUnitMethodNameResultSeeker>
+              </resultSeekers>
         </hudson.plugins.testlink.TestLinkBuilder>
     </builders>
 </project>
