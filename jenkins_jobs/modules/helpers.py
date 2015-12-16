@@ -182,6 +182,7 @@ def findbugs_settings(xml_parent, data):
 def auth_settings(xml_parent, data):
     # general auth settings
     mapping = {
+        'job-create': 'hudson.model.Item.Create',
         'job-delete': 'hudson.model.Item.Delete',
         'job-configure': 'hudson.model.Item.Configure',
         'job-read': 'hudson.model.Item.Read',
