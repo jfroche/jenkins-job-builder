@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project>
+    <builders>
+        <hudson.plugins.testlink.TestLinkBuilder>
+            <testLinkName>testLinkName</testLinkName>
+            <testProjectName>testProjectName</testProjectName>
+            <testPlanName>testPlanName</testPlanName>
+            <buildName>buildName</buildName>
+            <platformName>platformName</platformName>
+            <customFields>TestClassMethod</customFields>
+            <singleBuildSteps>
+                <hudson.tasks.Shell>
+                    <command>make a</command>
+                </hudson.tasks.Shell>
+                <hudson.tasks.Shell>
+                    <command>make b</command>
+                </hudson.tasks.Shell>
+            </singleBuildSteps>
+            <transactional>false</transactional>
+            <failedTestsMarkBuildAsFailure>false</failedTestsMarkBuildAsFailure>
+            <failIfNoResults>false</failIfNoResults>
+            <failOnNotRun>false</failOnNotRun>
+            <executionOrderComparator />
+            <failure>false</failure>
+        </hudson.plugins.testlink.TestLinkBuilder>
+    </builders>
+</project>

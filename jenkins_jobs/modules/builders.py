@@ -2387,3 +2387,57 @@ def beaker(parser, xml_parent, data):
 
     XML.SubElement(beaker, 'downloadFiles').text = str(data.get(
         'download-logs', False)).lower()
+
+
+def testlink(parser, xml_parent, data):
+    """yaml: testlink
+    This plug-in integrates Jenkins and TestLink and generates reports on
+    automated test execution. Requires the Jenkins :jenkins-wiki:`TestLink
+    Plugin <TestLink+Plugin>`.
+
+    :arg str name: TestLink Name (optional)
+    :arg str project: TestLink Project Name (optional)
+    :arg str plan: TestLink Plan Name (Required)
+    :arg str build: Build Name (Required)
+    :arg str platform: Platform Name (optional)
+    :arg str custom-fields: Custom Fields (optional)
+    :arg str single-build-steps: Single Build Steps Section (optional list of other builder steps)
+    :arg bool transactional: Transactional flag (default false)
+    :arg bool mark-build-as-failure: Failed Tests Mark Build As Failure (default false)
+    :arg bool fail-if-no-results: Fail If No Results (default false)
+    :arg bool fail-on-not-run: failOnNotRun flag (default false)
+    :arg bool failure: Failure flag (default false)
+
+    Example:
+
+    .. literalinclude:: ../../tests/builders/fixtures/testlink-001.yaml
+       :language: yaml
+    """
+    testlink = XML.SubElement(xml_parent, 'hudson.plugins.testlink.TestLinkBuilder')
+    XML.SubElement(testlink, 'testLinkName').text = data.get('name', '(Default)')
+    XML.SubElement(testlink, 'testProjectName').text = data.get('project', '')
+    try:
+        XML.SubElement(testlink, 'testPlanName').text = data['plan']
+        XML.SubElement(testlink, 'buildName').text = data['build']
+    except KeyError as e:
+        raise MissingAttributeError("'%s'" % e.args[0])
+    XML.SubElement(testlink, 'platformName').text = data.get('platform', '')
+    XML.SubElement(testlink, 'customFields').text = data.get('custom-fields', '')
+    # add builders steps
+    builders = XML.SubElement(testlink, 'singleBuildSteps')
+    for pub in data.get('single-build-steps', []):
+        for edited_node in create_builders(parser, pub):
+            builders.append(edited_node)
+
+    XML.SubElement(testlink, 'transactional').text = str(data.get(
+        'transactional', False)).lower()
+    XML.SubElement(testlink, 'failedTestsMarkBuildAsFailure').text = str(data.get(
+        'mark-build-as-failure', False)).lower()
+    XML.SubElement(testlink, 'failIfNoResults').text = str(data.get(
+        'fail-if-no-results', False)).lower()
+    XML.SubElement(testlink, 'failOnNotRun').text = str(data.get(
+        'fail-on-not-run', False)).lower()
+    # not implemented yet
+    XML.SubElement(testlink, 'executionOrderComparator').text = ''
+    XML.SubElement(testlink, 'failure').text = str(data.get(
+        'failure', False)).lower()
