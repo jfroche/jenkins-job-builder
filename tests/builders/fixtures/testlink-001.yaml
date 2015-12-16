@@ -9,3 +9,7 @@ builders:
         single-build-steps:
           - shell: "make a"
           - shell: "make b"
+        result-seekers:
+          - junit-method:
+              include-pattern: load-cps/target/test-reports/**.xml
+              key-custom-field: TestClassMethod

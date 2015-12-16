@@ -42,6 +42,9 @@ import jenkins_jobs.modules.base
 from jenkins_jobs.modules import hudson_model
 from jenkins_jobs.modules.helpers import config_file_provider_builder
 from jenkins_jobs.modules.helpers import config_file_provider_settings
+from jenkins_jobs.modules.helpers import result_junit
+from jenkins_jobs.modules.helpers import result_tap
+from jenkins_jobs.modules.helpers import result_testng
 from jenkins_jobs.errors import (JenkinsJobsException,
                                  MissingAttributeError,
                                  InvalidAttributeError)
@@ -2407,6 +2410,17 @@ def testlink(parser, xml_parent, data):
     :arg bool fail-if-no-results: Fail If No Results (default false)
     :arg bool fail-on-not-run: failOnNotRun flag (default false)
     :arg bool failure: Failure flag (default false)
+    :art list result-seekers
+        - junit-method
+        - junit-class
+        - junit-method
+        - junit-suite
+        - tap-file
+        - tap-file-link
+        - testng-class
+        - testng-method
+        - testng-method-with-provider
+        - testng-suite
 
     Example:
 
@@ -2441,3 +2455,36 @@ def testlink(parser, xml_parent, data):
     XML.SubElement(testlink, 'executionOrderComparator').text = ''
     XML.SubElement(testlink, 'failure').text = str(data.get(
         'failure', False)).lower()
+    # resultSeekers
+    seekers = XML.SubElement(testlink, 'resultSeekers')
+    for result in data.get('result-seekers', []):
+        if 'junit-method' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.JUnitMethodNameResultSeeker')
+            result_junit(item, result['junit-method'])
+        elif 'junit-class' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.JUnitCaseClassNameResultSeeker')
+            result_junit(item, result['junit-class'])
+        elif 'junit-method' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.JUnitMethodNameResultSeeker')
+            result_junit(item, result['junit-method'])
+        elif 'junit-suite' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.JUnitSuiteNameResultSeeker')
+            result_junit(item, result['junit-suite'])
+        elif 'tap-file' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TAPFileNameResultSeeker')
+            result_tap(item, result['tap-file'])
+        elif 'tap-file-link' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TAPFileNameMultiTestPointsResultSeeker')
+            result_tap(item, result['tap-file-link'])
+        elif 'testng-class' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TestNGClassNameResultSeeker')
+            result_testng(item, result['testng-class'])
+        elif 'testng-method' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TestNGMethodNameResultSeeker')
+            result_testng(item, result['testng-method'])
+        elif 'testng-method-with-provider' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TestNGMethodNameDataProviderNameResultSeeker')
+            result_testng(item, result['testng-method-with-provider'])
+        elif 'testng-suite' in result:
+            item = XML.SubElement(seekers, 'hudson.plugins.testlink.result.TestNGSuiteNameResultSeeker')
+            result_testng(item, result['testng-suite'])
