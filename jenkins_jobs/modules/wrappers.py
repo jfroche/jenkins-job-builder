@@ -1980,19 +1980,16 @@ def gradle_artifactory(parser, xml_parent, data):
 
     #artPattern = XML.SubElement(artifactory,'artifactPattern')
 
-
     artDepPatterns = XML.SubElement(artifactory,'artifactDeploymentPatterns')
     XML.SubElement(artDepPatterns, 'includePatterns').text = \
         data.get('include-patterns', '')
     XML.SubElement(artDepPatterns, 'excludePatterns').text = \
         data.get('exclude-patterns', '')
 
-
     details = XML.SubElement(artifactory, 'details')
     XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
     XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
     XML.SubElement(details,'userPluginKey').text = data.get('user-plugin-key','')
-
 
     deployrelrepo = XML.SubElement(details, 'deployReleaseRepository')
     XML.SubElement(deployrelrepo, 'keyFromText').text = data.get('release-key-from-text', '')
@@ -2006,15 +2003,13 @@ def gradle_artifactory(parser, xml_parent, data):
     XML.SubElement(resolverelrepo, 'dynamicMode').text = \
         str(data.get('resolve-dynamic-mode', False)).lower()
 
-
     stagplugin = XML.SubElement(details, 'stagingPlugin')
     XML.SubElement(stagplugin, 'pluginame').text = data.get('staging-plugin-name', '')
-
 
     envpatterns = XML.SubElement(artifactory,'envVarsPatterns')
     XML.SubElement(envpatterns,'includePatterns').text = data.get('env-include-patterns','')
     XML.SubElement(envpatterns,'excludePatterns').text = data.get('env-exclude-patterns','')
-    
+
 
 class Wrappers(jenkins_jobs.modules.base.Base):
     sequence = 80
