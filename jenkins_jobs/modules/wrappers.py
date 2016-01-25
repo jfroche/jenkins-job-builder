@@ -1933,95 +1933,87 @@ def gradle_artifactory(parser, xml_parent, data):
     artifactory = XML.SubElement(
         xml_parent,
         'org.jfrog.hudson.gradle.ArtifactoryGradleConfigurator')
-    XML.SubElement(artifactory, 'deployMaven').text = \
-        str(data.get('deploy-maven', False)).lower()
-    XML.SubElement(artifactory, 'deployIvy').text = \
-        str(data.get('deploy-ivy', False)).lower()
-    XML.SubElement(artifactory, 'deployBuildInfo').text = \
-        str(data.get('deploy-build-info', False)).lower()
-    XML.SubElement(artifactory, 'includeEnvVars').text = \
-        str(data.get('include-env-vars', False)).lower()
-    XML.SubElement(artifactory, 'runChecks').text = \
-        str(data.get('run-checks', False)).lower()
-    XML.SubElement(artifactory, 'violationRecipients').text = \
-        data.get('violation-recipients', '')
-    XML.SubElement(artifactory, 'includePublishArtifacts').text = \
-        str(data.get('include-publish-artifacts', False)).lower()
-    XML.SubElement(artifactory, 'licenseAutoDiscovery').text = \
-        str(data.get('license-auto-discovery', False)).lower()
-    XML.SubElement(artifactory, 'disableLicenseAutoDiscovery').text = \
-        str(data.get('disable-license-auto-discovery', False)).lower()
-    XML.SubElement(artifactory, 'ivyPattern').text = \
-        data.get('ivy-pattern', '')
-    XML.SubElement(artifactory, 'enableIssueTrackerIntegration').text = \
-        str(data.get('enable-issue-tracker-integration', False)).lower()
-    XML.SubElement(artifactory, 'aggregateBuildIssues').text = \
-        str(data.get('aggregate-build-issues', False)).lower()
-    
+
+    optional_bool_props = [
+        # xml property name, yaml property name, default value
+        ('deployMaven', 'deploy-maven', False),
+        ('deployIvy', 'deploy-ivy', False),
+        ('deployBuildInfo', 'deploy-build-info', False),
+        ('includeEnvVars', 'include-env-vars', False),
+        ('runChecks', 'run-checks', False),
+        ('includePublishArtifacts', 'include-publish-artifacts', False),
+        ('licenseAutoDiscovery', 'license-auto-discovery', False),
+        ('disableLicenseAutoDiscovery', 'disable-license-auto-discovery', False),
+        ('enableIssueTrackerIntegration', 'enable-issue-tracker-integration', False),
+        ('aggregateBuildIssues', 'aggregate-build-issues', False),
+        ('notM2Compatible', 'not-m2-compatible', False),
+        ('discardOldBuilds', 'discard-old-builds', False),
+        ('passIdentifiedDownstream', 'pass-identified-downstream', False),
+        ('discardBuildArtifacts', 'discard-build-artifacts', False),
+        ('skipInjectInitScripts', 'skip-inject-init-scripts', False),
+        ('allowPromotionOfNonStagedBuilds', 'allow-promotion-of-non-staged-builds', False),
+        ('allowBintrayPushOfNonStageBuilds', 'allow-bintray-push-of-non-stage-builds', False),
+        ('blackDuckRunChecks', 'black-duck-run-checks', False),
+        ('filterExcludedArtifactsFromBuild', 'filter-excluded-artifacts-from-build', False),
+        ('deployArtifacts', 'deploy-artifacts', False),
+        ('blackDuckIncludePublishedArtifacts', 'black-duck-include-publish-artifacts', False)
+    ]
+
+    for (xml_prop, yaml_prop, default_value) in optional_bool_props:
+        XML.SubElement(artifactory, xml_prop).text = str(data.get(
+            yaml_prop, default_value)).lower()
+
+    optional_str_props = [
+        # xml property name, yaml property name
+        ('blackDuckAppName', 'black-duck-app-name'),
+        ('blackDuckAppVersion', 'black-duck-app-version'),
+        ('violationRecipients', 'violation-recipients'),
+        ('ivyPattern', 'ivy-pattern'),
+        ('aggregationBuildStatus', 'aggregation-build-status'),
+        ('blackDuckReportRecipients', 'black-duck-report-recipients'),
+        ('blackDuckScopes', 'black-duck-scopes')
+    ]
+
+    for (xml_prop, yaml_prop) in optional_str_props:
+        XML.SubElement(artifactory, xml_prop).text = data.get(
+            yaml_prop, '')
+
     #artPattern = XML.SubElement(artifactory,'artifactPattern')
-    
-    XML.SubElement(artifactory, 'notM2Compatible').text = \
-        str(data.get('not-m2-compatible', False)).lower()
+
+
     artDepPatterns = XML.SubElement(artifactory,'artifactDeploymentPatterns')
     XML.SubElement(artDepPatterns, 'includePatterns').text = \
         data.get('include-patterns', '')
     XML.SubElement(artDepPatterns, 'excludePatterns').text = \
         data.get('exclude-patterns', '')
-    XML.SubElement(artifactory, 'discardOldBuilds').text = \
-        str(data.get('discard-old-builds', False)).lower() 
-    XML.SubElement(artifactory, 'passIdentifiedDownstream').text = \
-        str(data.get('pass-identified-downstream', False)).lower()    
-    XML.SubElement(artifactory, 'discardBuildArtifacts').text = \
-        str(data.get('discard-build-artifacts', False)).lower()
-    XML.SubElement(artifactory, 'skipInjectInitScripts').text = \
-        str(data.get('skip-inject-init-scripts', False)).lower()
-    XML.SubElement(artifactory, 'allowPromotionOfNonStagedBuilds').text = \
-        str(data.get('allow-promotion-of-non-staged-builds', False)).lower()
-    XML.SubElement(artifactory, 'allowBintrayPushOfNonStageBuilds').text = \
-        str(data.get('allow-bintray-push-of-non-stage-builds', False)).lower()
-    XML.SubElement(artifactory, 'blackDuckRunChecks').text = \
-        str(data.get('black-duck-run-checks', False)).lower()
-    XML.SubElement(artifactory, 'blackDuckAppName').text = \
-        data.get('black-duck-app-name', '')
-    XML.SubElement(artifactory, 'blackDuckAppVersion').text = \
-        data.get('black-duck-app-version', '')
-    XML.SubElement(artifactory, 'filterExcludedArtifactsFromBuild').text = \
-        str(data.get('filter-excluded-artifacts-from-build', False)).lower()
-    
+
+
     details = XML.SubElement(artifactory, 'details')
     XML.SubElement(details, 'artifactoryUrl').text = data.get('url', '')
     XML.SubElement(details, 'artifactoryName').text = data.get('name', '')
+    XML.SubElement(details,'userPluginKey').text = data.get('user-plugin-key','')
+
+
     deployrelrepo = XML.SubElement(details, 'deployReleaseRepository')
     XML.SubElement(deployrelrepo, 'keyFromText').text = data.get('release-key-from-text', '')
     XML.SubElement(deployrelrepo, 'keyFromSelect').text = data.get('release-key-from-select', '')
     XML.SubElement(deployrelrepo, 'dynamicMode').text = \
         str(data.get('deploy-dynamic-mode', False)).lower()
-    
+
     resolverelrepo = XML.SubElement(details, 'resolveReleaseRepository')
     XML.SubElement(resolverelrepo, 'keyFromText').text = data.get('resolve-key-from-text', '')
     XML.SubElement(resolverelrepo, 'keyFromSelect').text = data.get('resolve-key-from-select', '')
     XML.SubElement(resolverelrepo, 'dynamicMode').text = \
         str(data.get('resolve-dynamic-mode', False)).lower()
 
+
     stagplugin = XML.SubElement(details, 'stagingPlugin')
     XML.SubElement(stagplugin, 'pluginame').text = data.get('staging-plugin-name', '')
-    XML.SubElement(details,'userPluginKey').text = data.get('user-plugin-key','')
-    XML.SubElement(artifactory, 'deployArtifacts').text = \
-        str(data.get('deploy-artifacts', False)).lower()
-    XML.SubElement(artifactory, 'aggregationBuildStatus').text = \
-        data.get('aggregation-build-status', '')
-    
+
+
     envpatterns = XML.SubElement(artifactory,'envVarsPatterns')
     XML.SubElement(envpatterns,'includePatterns').text = data.get('env-include-patterns','')
     XML.SubElement(envpatterns,'excludePatterns').text = data.get('env-exclude-patterns','')
-    
-    
-    XML.SubElement(artifactory, 'blackDuckReportRecipients').text = \
-        data.get('black-duck-report-recipients', '')
-    XML.SubElement(artifactory, 'blackDuckScopes').text = \
-        data.get('black-duck-scopes', '')
-    XML.SubElement(artifactory, 'blackDuckIncludePublishedArtifacts').text = \
-        str(data.get('black-duck-include-publish-artifacts', False)).lower()
     
 
 class Wrappers(jenkins_jobs.modules.base.Base):
